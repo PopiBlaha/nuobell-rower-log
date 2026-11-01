@@ -1,0 +1,36 @@
+*{box-sizing:border-box}
+body{margin:0;background:#f4f7fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#17202a;padding-bottom:86px}
+header{background:#17365d;color:white;padding:calc(18px + env(safe-area-inset-top)) 16px 18px}
+h1{font-size:24px;margin:0}
+header p{margin:5px 0 0;opacity:.85}
+main{max-width:760px;margin:auto;padding:14px}
+section{display:none}
+section.active{display:block}
+h2{color:#17365d}
+.card,.ref,.rec{background:#fff;border-radius:15px;padding:14px;margin-bottom:13px;box-shadow:0 2px 12px #1232}
+details{border:1px solid #dde5ed;border-radius:13px;padding:12px;margin:11px 0}
+summary{font-weight:800;color:#17365d}
+label{display:block;font-size:12px;font-weight:750;color:#52606c;margin-bottom:4px}
+select,input,textarea{width:100%;font-size:17px;padding:11px;border:1px solid #cbd5df;border-radius:10px;background:white}
+textarea{min-height:64px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+button{border:0;border-radius:11px;padding:12px;background:#17365d;color:#fff;font-weight:750;font-size:15px}
+.save{width:100%;margin-top:10px;background:#177443}
+.status{height:19px;color:#177443;font-size:13px;padding-top:4px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #cad5df;display:grid;grid-template-columns:repeat(6,1fr);padding:5px 3px calc(5px + env(safe-area-inset-bottom))}
+nav button{background:transparent;color:#52606c;font-size:11px;padding:8px 1px}
+nav button.active{background:#eaf1f8;color:#17365d}
+.ref img{width:100%;border-radius:11px}
+.ref a{color:#075dad;font-weight:750}
+.note{background:#fff3cd;border-radius:12px;padding:11px}
+.actions{display:flex;gap:8px}
+.actions>*{flex:1}
+.file{background:#e7edf4;color:#17365d;border-radius:11px;padding:12px;text-align:center;font-weight:750}
+.file input{display:none}
+.rec{border-left:5px solid #2f5597}
+.del{float:right;padding:5px 8px;background:#eee;color:#942525}
+@media(min-width:700px){#refs{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
+.row-plan{margin-top:10px}
+.field-spaced{margin-top:9px}
+.refs{margin-top:12px}
