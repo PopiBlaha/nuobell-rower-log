@@ -13,18 +13,31 @@
       <p>8-Week Strength + Rower Program</p>
     </header>
     <main>
+      <div id="appNotice" class="app-notice" role="status" aria-live="polite" hidden></div>
+      <div id="legacyNotice" class="legacy-notice" role="alert" hidden>
+        <p>Legacy workout records were detected. They have not been changed. Export them before choosing to replace this data with Version 2 storage.</p>
+        <div class="actions">
+          <button type="button" id="exportLegacy">Export legacy JSON</button>
+          <button type="button" id="replaceLegacy">Start using Version 2</button>
+        </div>
+      </div>
+      <div id="activeWorkoutBanner" class="active-banner" hidden>
+        <span id="activeWorkoutLabel"></span>
+        <button type="button" id="resumeActiveWorkout">Resume workout</button>
+      </div>
+
       <section id="Monday" class="active">
         <h2>Monday · Strength A</h2>
-        <div class="card">
-          <p>5-minute easy row warm-up</p>
-          <div id="mon"></div>
-          <p>Finish: 10-minute very easy row</p>
+        <div class="card launch-card">
+          <p>5-minute easy row warm-up · Strength A · 10-minute very easy row cool-down</p>
+          <button type="button" class="primary-action" data-start-workout="monday-strength-a">Start Strength A</button>
         </div>
       </section>
+
       <section id="Wednesday">
         <h2>Wednesday · Rower</h2>
-        <div class="card">
-          <label>Training week</label>
+        <div class="card launch-card">
+          <label for="rw">Training week</label>
           <select id="rw">
             <option>Weeks 1–2</option>
             <option>Weeks 3–4</option>
@@ -32,78 +45,28 @@
             <option>Weeks 7–8</option>
           </select>
           <div class="note row-plan" id="rp"></div>
-          <div class="g2">
-            <div>
-              <label>Minutes</label>
-              <select id="rm">
-                <option>5</option>
-                <option>10</option>
-                <option>15</option>
-                <option>20</option>
-                <option>25</option>
-                <option>30</option>
-                <option>35</option>
-                <option>40</option>
-                <option>45</option>
-              </select>
-            </div>
-            <div>
-              <label>Distance (m)</label>
-              <input id="rd" inputmode="numeric">
-            </div>
-            <div>
-              <label>Stroke rate</label>
-              <select id="rs">
-                <option>16</option>
-                <option>17</option>
-                <option>18</option>
-                <option>19</option>
-                <option>20</option>
-                <option>21</option>
-                <option>22</option>
-                <option>23</option>
-                <option>24</option>
-                <option>25</option>
-                <option>26</option>
-                <option>27</option>
-                <option>28</option>
-                <option>29</option>
-                <option>30</option>
-              </select>
-            </div>
-            <div>
-              <label>Knees</label>
-              <select id="rk">
-                <option>Good</option>
-                <option>Mild discomfort</option>
-                <option>Stop / pain</option>
-              </select>
-            </div>
-          </div>
-          <label class="field-spaced">Notes</label>
-          <textarea id="rn"></textarea>
-          <button class="save" onclick="saveRow()">Save rowing log</button>
-          <div id="rstat" class="status"></div>
+          <button type="button" class="primary-action" data-start-workout="wednesday-row">Start rowing workout</button>
         </div>
       </section>
+
       <section id="Friday">
         <h2>Friday · Strength B</h2>
-        <div class="card">
-          <p>5-minute easy row warm-up</p>
-          <div id="fri"></div>
-          <p>Finish: 10-minute very easy row</p>
+        <div class="card launch-card">
+          <p>5-minute easy row warm-up · Strength B · 10-minute very easy row cool-down</p>
+          <button type="button" class="primary-action" data-start-workout="friday-strength-b">Start Strength B</button>
         </div>
       </section>
+
       <section id="Saturday">
         <h2>Saturday · Optional</h2>
-        <div class="card">
-          <label>Activity</label>
+        <form id="optionalForm" class="card">
+          <label for="sa">Activity</label>
           <select id="sa">
             <option>Easy conversational row</option>
             <option>Comfortable walk</option>
             <option>Recovery / rest</option>
           </select>
-          <label class="field-spaced">Minutes</label>
+          <label for="sm" class="field-spaced">Minutes</label>
           <select id="sm">
             <option>0</option>
             <option>5</option>
@@ -119,65 +82,65 @@
             <option>55</option>
             <option>60</option>
           </select>
-          <label class="field-spaced">Notes</label>
+          <label for="sn" class="field-spaced">Notes</label>
           <textarea id="sn"></textarea>
-          <button class="save" onclick="saveSat()">Save optional-day log</button>
-          <div id="sstat" class="status"></div>
-        </div>
+          <button class="save" type="submit">Save optional-day log</button>
+        </form>
       </section>
+
       <section id="Reference">
         <h2>Exercise Reference</h2>
         <div class="note">Illustrations are quick reminders. Use the linked ACE resources for additional form guidance.</div>
         <div id="refs" class="refs">
-          <article class="ref">
+          <article class="ref" data-exercise-id="romanian-deadlift">
             <h3>Romanian Deadlift</h3>
             <img src="assets/exercise-01.jpg">
             <p>Soft knees; hinge at hips; weights close; neutral back.</p>
             <a href="https://www.acefitness.org/continuing-education/certified/may-2025/8865/the-ace-do-it-better-series-the-romanian-deadlift/" target="_blank">ACE guidance ↗</a>
           </article>
-          <article class="ref">
+          <article class="ref" data-exercise-id="floor-press">
             <h3>Floor Press</h3>
             <img src="assets/exercise-02.jpg">
             <p>Lower under control until upper arms meet floor; press smoothly.</p>
             <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
           </article>
-          <article class="ref">
+          <article class="ref" data-exercise-id="supported-one-arm-row">
             <h3>Supported One-Arm Row</h3>
             <img src="assets/exercise-03.jpg">
             <p>Brace on a stable support; row without twisting.</p>
             <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
           </article>
-          <article class="ref">
+          <article class="ref" data-exercise-id="standing-calf-raise">
             <h3>Standing Calf Raise</h3>
             <img src="assets/exercise-04.jpg">
             <p>Use support; rise, pause and lower slowly.</p>
             <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
           </article>
-          <article class="ref">
+          <article class="ref" data-exercise-id="bird-dog">
             <h3>Bird Dog</h3>
             <img src="assets/exercise-05.jpg">
             <p>Extend opposite arm and leg while keeping trunk still.</p>
             <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
           </article>
-          <article class="ref">
+          <article class="ref" data-exercise-id="glute-bridge">
             <h3>Glute Bridge</h3>
             <img src="assets/exercise-06.jpg">
             <p>Comfortable knee bend; squeeze glutes to lift hips.</p>
             <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
           </article>
-          <article class="ref">
+          <article class="ref" data-exercise-id="hammer-curl">
             <h3>Hammer Curl</h3>
             <img src="assets/exercise-07.jpg">
             <p>Palms inward; upper arms quiet; no swinging.</p>
             <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
           </article>
-          <article class="ref">
+          <article class="ref" data-exercise-id="seated-overhead-press">
             <h3>Seated Overhead Press</h3>
             <img src="assets/exercise-08.jpg">
             <p>Stable chair with back support; light load; keep breathing.</p>
             <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
           </article>
-          <article class="ref">
+          <article class="ref" data-exercise-id="suitcase-hold">
             <h3>Suitcase Hold</h3>
             <img src="assets/exercise-09.jpg">
             <p>Stand tall with one dumbbell; resist leaning.</p>
@@ -185,16 +148,21 @@
           </article>
         </div>
       </section>
+
       <section id="History">
         <h2>History &amp; JSON</h2>
         <div class="card">
           <div class="actions">
-            <button onclick="exportJSON()">Export JSON</button>
-            <label class="file">Import JSON<input type="file" accept="application/json" onchange="importJSON(event)"></label>
+            <button type="button" id="exportJSON">Export JSON</button>
+            <label class="file">Import JSON<input id="importJSON" type="file" accept="application/json"></label>
           </div>
           <p>Records stay in this browser. Export JSON periodically as backup.</p>
         </div>
-        <div id="hist"></div>
+        <div id="historyList"></div>
+      </section>
+
+      <section id="Workout" aria-label="Active workout">
+        <div id="workoutContent"></div>
       </section>
     </main>
     <nav>
@@ -205,6 +173,34 @@
       <button data-t="Reference" onclick="tab('Reference')">Form</button>
       <button data-t="History" onclick="tab('History')">Logs</button>
     </nav>
+
+    <div id="workoutChoice" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="workoutChoiceTitle">
+      <div class="modal-card">
+        <h2 id="workoutChoiceTitle">An active workout is in progress</h2>
+        <p id="workoutChoiceDescription"></p>
+        <button type="button" id="choiceResume" class="primary-action">Resume existing workout</button>
+        <button type="button" id="choiceDiscard" class="danger-action">Discard existing workout and start selected</button>
+        <button type="button" id="choiceCancel" class="secondary-action">Cancel</button>
+      </div>
+    </div>
+
+    <div id="confirmDialog" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="modal-card">
+        <h2 id="confirmTitle"></h2>
+        <p id="confirmMessage"></p>
+        <button type="button" id="confirmAction" class="danger-action"></button>
+        <button type="button" id="cancelConfirmation" class="secondary-action">Cancel</button>
+      </div>
+    </div>
+
+    <div id="exerciseFormDialog" class="modal form-modal" hidden role="dialog" aria-modal="true" aria-labelledby="exerciseFormTitle">
+      <div class="modal-card">
+        <h2 id="exerciseFormTitle" class="visually-hidden">Exercise form reference</h2>
+        <div id="exerciseFormContent"></div>
+        <button type="button" id="closeExerciseForm" class="primary-action">CLOSE FORM</button>
+      </div>
+    </div>
+
     <script src="js/app.js"></script>
   </body>
 </html>
