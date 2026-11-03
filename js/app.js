@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'nuobellLogs';
+const PROGRAM_VERSION = 'bench-supported-v1';
 const WEIGHTS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
 const KNEE_OPTIONS = [
   ['good', 'Good'],
@@ -10,72 +11,142 @@ const EFFORT_OPTIONS = [
   ['two_to_three_reps_left', '2–3 reps left'],
   ['hard', 'Hard']
 ];
+const ROWING_VALIDATION_MESSAGE = 'Enter a valid time, positive meters, resistance from 1 to 10, and positive SPM.';
 const EXERCISES = {
   'romanian-deadlift': {
     name: 'Romanian Deadlift',
+    currentName: 'NÜOBELL Romanian Deadlift',
     loadMode: 'required',
     implement: 'two_dumbbells',
     valueKey: 'reps',
-    valueLabel: 'Reps'
+    valueLabel: 'Reps',
+    image: 'assets/exercise-01.jpg',
+    cues: 'Soft knees; hinge at hips; weights close; neutral back.',
+    aceUrl: 'https://www.acefitness.org/continuing-education/certified/may-2025/8865/the-ace-do-it-better-series-the-romanian-deadlift/',
+    videoUrl: 'https://www.youtube.com/watch?v=aa57T45iFSE'
   },
   'floor-press': {
     name: 'Floor Press',
     loadMode: 'required',
     implement: 'two_dumbbells',
     valueKey: 'reps',
-    valueLabel: 'Reps'
+    valueLabel: 'Reps',
+    retired: true
+  },
+  'low-incline-dumbbell-press': {
+    name: 'Low-Incline NÜOBELL Dumbbell Press',
+    loadMode: 'required',
+    implement: 'two_dumbbells',
+    valueKey: 'reps',
+    valueLabel: 'Reps',
+    image: 'assets/exercise-10.png',
+    cues: 'Set the Rogue Adjustable Bench 3.0 to a low incline; stay supported on the bench and press smoothly.',
+    videoUrl: 'https://www.youtube.com/watch?v=fez7La5001w'
   },
   'supported-one-arm-row': {
     name: 'Supported One-Arm Row',
+    currentName: 'Supported One-Arm NÜOBELL Row',
     loadMode: 'required',
     implement: 'one_dumbbell',
     valueKey: 'repsPerSide',
-    valueLabel: 'Reps per side'
+    valueLabel: 'Reps per side',
+    image: 'assets/exercise-03.jpg',
+    cues: 'Brace one hand on the Rogue Adjustable Bench 3.0 while standing; row without twisting.',
+    videoUrl: 'https://www.youtube.com/watch?v=ZRSGpBUVcNw'
+  },
+  'chest-supported-dumbbell-row': {
+    name: 'Chest-Supported NÜOBELL Row',
+    loadMode: 'required',
+    implement: 'two_dumbbells',
+    valueKey: 'reps',
+    valueLabel: 'Reps',
+    image: 'assets/exercise-11.png',
+    cues: 'Set the Rogue Adjustable Bench 3.0 to an incline; keep your chest supported while standing and row both dumbbells.',
+    videoUrl: 'https://www.youtube.com/watch?v=0-DXJiceG-0'
+  },
+  'supported-standing-hip-extension': {
+    name: 'Supported Standing Hip Extension',
+    loadMode: 'bodyweight',
+    implement: null,
+    valueKey: 'repsPerSide',
+    valueLabel: 'Reps per side',
+    image: 'assets/exercise-12.png',
+    cues: 'Stand tall and hold the Rogue Adjustable Bench 3.0 for balance; extend one leg behind you without arching your back.',
+    videoUrl: 'https://www.youtube.com/watch?v=Ayfg6sEzA8Y'
   },
   'standing-calf-raise': {
     name: 'Standing Calf Raise',
+    currentName: 'Standing NÜOBELL Calf Raise',
     loadMode: 'optional',
     implement: 'one_dumbbell',
     valueKey: 'reps',
-    valueLabel: 'Reps'
+    valueLabel: 'Reps',
+    image: 'assets/exercise-04.jpg',
+    cues: 'Stand tall near the Rogue Adjustable Bench 3.0 for balance; rise, pause and lower slowly.',
+    videoUrl: 'https://www.youtube.com/watch?v=H6WptvjXkgw'
   },
   'bird-dog': {
     name: 'Bird Dog',
     loadMode: 'bodyweight',
     implement: null,
     valueKey: 'repsPerSide',
-    valueLabel: 'Reps per side'
+    valueLabel: 'Reps per side',
+    retired: true
   },
   'glute-bridge': {
     name: 'Glute Bridge',
     loadMode: 'optional',
     implement: 'one_dumbbell',
     valueKey: 'reps',
-    valueLabel: 'Reps'
+    valueLabel: 'Reps',
+    retired: true
   },
   'hammer-curl': {
     name: 'Hammer Curl',
+    currentName: 'Seated NÜOBELL Hammer Curl',
     loadMode: 'required',
     implement: 'two_dumbbells',
     valueKey: 'reps',
-    valueLabel: 'Reps'
+    valueLabel: 'Reps',
+    image: 'assets/exercise-07.jpg',
+    cues: 'Sit upright on the Rogue Adjustable Bench 3.0; keep palms facing inward and avoid swinging.',
+    videoUrl: 'https://www.youtube.com/watch?v=CFBZ4jN1CMI'
   },
   'seated-overhead-press': {
     name: 'Seated Overhead Press',
+    currentName: 'Seated NÜOBELL Overhead Press',
     loadMode: 'required',
     implement: 'two_dumbbells',
     valueKey: 'reps',
-    valueLabel: 'Reps'
+    valueLabel: 'Reps',
+    image: 'assets/exercise-08.jpg',
+    cues: 'Sit upright on the Rogue Adjustable Bench 3.0; press smoothly and keep breathing.',
+    videoUrl: 'https://www.youtube.com/watch?v=C0We_bEyxlM'
   },
   'suitcase-hold': {
     name: 'Suitcase Hold',
+    currentName: 'NÜOBELL Suitcase Hold',
     loadMode: 'required',
     implement: 'one_dumbbell',
     valueKey: 'secondsPerSide',
-    valueLabel: 'Seconds per side'
+    valueLabel: 'Seconds per side',
+    image: 'assets/exercise-09.jpg',
+    cues: 'Stand tall with one dumbbell; resist leaning.',
+    videoUrl: 'https://www.youtube.com/watch?v=WS1Db_NQdFI'
   }
 };
-const STRENGTH_PLANS = {
+const EXERCISE_LIBRARY_IDS = [
+  'romanian-deadlift',
+  'low-incline-dumbbell-press',
+  'supported-one-arm-row',
+  'chest-supported-dumbbell-row',
+  'supported-standing-hip-extension',
+  'standing-calf-raise',
+  'seated-overhead-press',
+  'hammer-curl',
+  'suitcase-hold'
+];
+const LEGACY_STRENGTH_PLANS = {
   'monday-strength-a': {
     day: 'Monday',
     title: 'Strength A',
@@ -99,6 +170,55 @@ const STRENGTH_PLANS = {
       'seated-overhead-press',
       'suitcase-hold'
     ],
+    cooldownMinutes: 10
+  }
+};
+const STRENGTH_PLANS = {
+  'monday-strength-a': {
+    day: 'Monday',
+    title: 'Strength A',
+    exercises: [
+      'romanian-deadlift',
+      'low-incline-dumbbell-press',
+      'supported-one-arm-row',
+      'standing-calf-raise',
+      'suitcase-hold'
+    ],
+    cooldownMinutes: 10
+  },
+  'friday-strength-b': {
+    day: 'Friday',
+    title: 'Strength B',
+    exercises: [
+      'romanian-deadlift',
+      'chest-supported-dumbbell-row',
+      'seated-overhead-press',
+      'hammer-curl',
+      'supported-standing-hip-extension',
+      'standing-calf-raise',
+      'suitcase-hold'
+    ],
+    variations: {
+      'romanian-deadlift': 'Use a lighter load and a controlled tempo.'
+    },
+    cooldownMinutes: 10
+  }
+};
+const PREVIOUS_STRENGTH_PLANS = {
+  'friday-strength-b': {
+    day: 'Friday',
+    title: 'Strength B',
+    exercises: [
+      'romanian-deadlift',
+      'chest-supported-dumbbell-row',
+      'seated-overhead-press',
+      'hammer-curl',
+      'standing-calf-raise',
+      'suitcase-hold'
+    ],
+    variations: {
+      'romanian-deadlift': 'Use a lighter load and a controlled tempo.'
+    },
     cooldownMinutes: 10
   }
 };
@@ -181,6 +301,35 @@ function validDraftNumber(value) {
   return typeof value === 'string' && (value === '' || /^-?\d+$/.test(value));
 }
 
+function validRowingDraft(draft) {
+  return draft
+    && typeof draft.elapsedTime === 'string'
+    && draft.elapsedTime.length <= 8
+    && validDraftNumber(draft.meters)
+    && validDraftNumber(draft.resistance)
+    && (draft.spm === '' || /^(?:\d+(?:\.\d*)?|\.\d*)$/.test(draft.spm));
+}
+
+function validRowingData(data, complete = false) {
+  if (!data || typeof data !== 'object') return false;
+  const fields = ['elapsedSeconds', 'meters', 'resistance'];
+  if (fields.some(field => data[field] !== null && !Number.isInteger(data[field]))) return false;
+  if (data.spm !== null && (!Number.isFinite(data.spm) || data.spm <= 0)) return false;
+  if (complete) {
+    return Number.isInteger(data.elapsedSeconds) && data.elapsedSeconds > 0
+      && Number.isInteger(data.meters) && data.meters > 0
+      && Number.isInteger(data.resistance) && data.resistance >= 1 && data.resistance <= 10
+      && Number.isFinite(data.spm) && data.spm > 0;
+  }
+  return (data.elapsedSeconds === null || data.elapsedSeconds > 0)
+    && (data.meters === null || data.meters > 0)
+    && (data.resistance === null || (data.resistance >= 1 && data.resistance <= 10));
+}
+
+function isValidKneeResponse(value) {
+  return value == null || value === '' || KNEE_OPTIONS.some(([key]) => key === value);
+}
+
 function escapeHTML(value) {
   return String(value).replace(/[&<>"']/g, character => ({
     '&': '&amp;',
@@ -228,10 +377,26 @@ function isValidExerciseDraft(draft, exercise) {
     && (draft.skipReason || '').length <= 120;
 }
 
-function isValidStep(step) {
+function isValidStep(step, programVersion) {
   if (!step || !['completed', 'skipped', 'not_started'].includes(step.status)) return false;
   if (step.kind === 'warmup' || step.kind === 'cooldown') {
     if (step.activity !== 'row') return false;
+    if (programVersion === PROGRAM_VERSION) {
+      if (!validRowingData(step.rowingData)
+        || (step.entryDraft
+          && (!validRowingDraft(step.entryDraft)
+            || !isValidKneeResponse(step.entryDraft.kneeResponse)))) return false;
+      if (step.status === 'completed') {
+        return validRowingData(step.rowingData, true)
+          && KNEE_OPTIONS.some(([key]) => key === step.kneeResponse);
+      }
+      return step.status === 'skipped'
+        || (step.rowingData.elapsedSeconds === null
+          && step.rowingData.meters === null
+          && step.rowingData.resistance === null
+          && step.rowingData.spm === null
+          && step.kneeResponse === null);
+    }
     if (step.entryDraft
       && (!validDraftNumber(step.entryDraft.actualMinutes)
         || (step.entryDraft.kneeResponse !== ''
@@ -260,6 +425,23 @@ function isValidStep(step) {
       && (step.skipReason == null || (typeof step.skipReason === 'string' && step.skipReason.length <= 120));
   }
   if (step.kind === 'row') {
+    if (programVersion === PROGRAM_VERSION) {
+      if (!validRowingData(step.rowingData)
+        || (step.entryDraft
+          && (!validRowingDraft(step.entryDraft)
+            || !isValidKneeResponse(step.entryDraft.kneeResponse)
+            || typeof step.entryDraft.notes !== 'string'))) return false;
+      return step.status === 'completed'
+        ? validRowingData(step.rowingData, true)
+          && KNEE_OPTIONS.some(([key]) => key === step.kneeResponse)
+          && typeof step.notes === 'string'
+        : step.status === 'skipped'
+          || (step.rowingData.elapsedSeconds === null
+            && step.rowingData.meters === null
+            && step.rowingData.resistance === null
+            && step.rowingData.spm === null
+            && step.kneeResponse === null);
+    }
     if (step.entryDraft
       && (!validDraftNumber(step.entryDraft.minutes)
         || (step.entryDraft.distance !== '' && !validDraftNumber(step.entryDraft.distance))
@@ -278,6 +460,18 @@ function isValidStep(step) {
       : step.status === 'not_started';
   }
   if (step.kind === 'optional') {
+    if (programVersion === PROGRAM_VERSION) {
+      if (!['row', 'walk', 'rest'].includes(step.activity)) return false;
+      if (step.activity === 'row') {
+        return step.status === 'completed'
+          && validRowingData(step.rowingData, true)
+          && typeof step.notes === 'string';
+      }
+      return step.status === 'completed'
+        && Number.isInteger(step.minutes)
+        && step.minutes >= 0
+        && typeof step.notes === 'string';
+    }
     return step.status === 'completed'
       && typeof step.activity === 'string'
       && Number.isInteger(step.minutes)
@@ -307,27 +501,34 @@ function validateEnvelope(value) {
       || !Number.isInteger(workout.currentStepIndex)
       || workout.currentStepIndex < 0
       || workout.currentStepIndex > workout.steps.length
-      || !workout.steps.every(isValidStep)
+      || (workout.programVersion !== undefined && workout.programVersion !== PROGRAM_VERSION)
+      || !workout.steps.every(step => isValidStep(step, workout.programVersion))
       || (workout.status === 'completed'
         && (workout.completedAt === null
           || workout.currentStepIndex !== workout.steps.length
           || workout.steps.some(step => step.status === 'not_started')))
       || (workout.status === 'in_progress' && workout.completedAt !== null)) return false;
     if (workout.type === 'strength') {
-      const plan = STRENGTH_PLANS[workout.planId];
-      return plan
-        && workout.day === plan.day
-        && workout.title === plan.title
-        && workout.steps.length === plan.exercises.length + 2
+      const legacy = workout.programVersion === undefined;
+      const plan = (legacy ? LEGACY_STRENGTH_PLANS : STRENGTH_PLANS)[workout.planId];
+      const compatiblePlan = legacy ? null : PREVIOUS_STRENGTH_PLANS[workout.planId];
+      return [plan, compatiblePlan].some(candidate =>
+        candidate
+        && workout.day === candidate.day
+        && workout.title === candidate.title
+        && workout.steps.length === candidate.exercises.length + 2
         && workout.steps[0].id === 'warm-up'
         && workout.steps[0].kind === 'warmup'
         && workout.steps[0].targetMinutes === 5
         && workout.steps.slice(1, -1).every((step, index) =>
-          step.kind === 'exercise' && step.exerciseId === plan.exercises[index]
+          step.kind === 'exercise'
+          && step.exerciseId === candidate.exercises[index]
+          && (step.variation || null) === (candidate.variations?.[step.exerciseId] || null)
         )
         && workout.steps[workout.steps.length - 1].id === 'cool-down'
-        && workout.steps[workout.steps.length - 1].targetMinutes === plan.cooldownMinutes
-        && workout.steps[workout.steps.length - 1].kind === 'cooldown';
+        && workout.steps[workout.steps.length - 1].targetMinutes === candidate.cooldownMinutes
+        && workout.steps[workout.steps.length - 1].kind === 'cooldown'
+      );
     }
     if (workout.type === 'row') {
       const plan = ROW_PLANS[workout.week];
@@ -456,6 +657,26 @@ function activeWorkout(workouts = storage.workouts) {
   return workouts.find(workout => workout.status === 'in_progress') || null;
 }
 
+function emptyRowingData() {
+  return {
+    elapsedSeconds: null,
+    meters: null,
+    resistance: null,
+    spm: null
+  };
+}
+
+function emptyRowingDraft(kneeResponse = 'good', notes = '') {
+  return {
+    elapsedTime: '',
+    meters: '',
+    resistance: '',
+    spm: '',
+    kneeResponse,
+    notes
+  };
+}
+
 function updateActiveWorkout(mutator) {
   if (storage.mode !== 'v2') {
     setNotice('Start using Version 2 storage before changing a workout.', true);
@@ -497,11 +718,11 @@ function defaultLoad(exercise, previous) {
   return { kind: 'weighted', weightLb, implement: exercise.implement };
 }
 
-function makeExerciseDraft(exerciseId) {
+function makeExerciseDraft(exerciseId, variation = null) {
   const exercise = EXERCISES[exerciseId];
   const previous = previousExercise(exerciseId);
   const setCount = previous ? previous.step.sets.length : 3;
-  const load = defaultLoad(exercise, previous);
+  const load = defaultLoad(exercise, variation ? null : previous);
   return {
     sets: Array.from({ length: setCount }, () => ({
       loadKind: load.kind,
@@ -514,8 +735,8 @@ function makeExerciseDraft(exerciseId) {
   };
 }
 
-function newExerciseStep(exerciseId) {
-  return {
+function newExerciseStep(exerciseId, variation = null) {
+  const step = {
     id: exerciseId,
     kind: 'exercise',
     exerciseId,
@@ -524,8 +745,10 @@ function newExerciseStep(exerciseId) {
     kneeResponse: null,
     effort: null,
     notes: null,
-    entryDraft: makeExerciseDraft(exerciseId)
+    entryDraft: makeExerciseDraft(exerciseId, variation)
   };
+  if (variation) step.variation = variation;
+  return step;
 }
 
 function exerciseDraftForStep(step) {
@@ -558,26 +781,29 @@ function makeStrengthWorkout(planId) {
       kind: 'warmup',
       activity: 'row',
       targetMinutes: 5,
-      actualMinutes: null,
+      rowingData: emptyRowingData(),
       status: 'not_started',
       kneeResponse: null,
-      entryDraft: { actualMinutes: '', kneeResponse: 'good' }
+      entryDraft: emptyRowingDraft()
     },
-    ...plan.exercises.map(newExerciseStep),
+    ...plan.exercises.map(exerciseId =>
+      newExerciseStep(exerciseId, plan.variations?.[exerciseId] || null)
+    ),
     {
       id: 'cool-down',
       kind: 'cooldown',
       activity: 'row',
       targetMinutes: plan.cooldownMinutes,
-      actualMinutes: null,
+      rowingData: emptyRowingData(),
       status: 'not_started',
       kneeResponse: null,
-      entryDraft: { actualMinutes: '', kneeResponse: 'good' }
+      entryDraft: emptyRowingDraft()
     }
   ];
   return {
     id: makeId(),
     type: 'strength',
+    programVersion: PROGRAM_VERSION,
     planId,
     title: plan.title,
     day: plan.day,
@@ -594,6 +820,7 @@ function makeRowWorkout(week) {
   return {
     id: makeId(),
     type: 'row',
+    programVersion: PROGRAM_VERSION,
     planId: 'wednesday-row',
     title: 'Rower',
     day: 'Wednesday',
@@ -609,10 +836,10 @@ function makeRowWorkout(week) {
         kind: 'warmup',
         activity: 'row',
         targetMinutes: 5,
-        actualMinutes: null,
+        rowingData: emptyRowingData(),
         status: 'not_started',
         kneeResponse: null,
-        entryDraft: { actualMinutes: '', kneeResponse: 'good' }
+        entryDraft: emptyRowingDraft()
       },
       {
         id: 'main-row',
@@ -621,28 +848,20 @@ function makeRowWorkout(week) {
         targetMinutes: plan.targetMinutes,
         prescription: plan.main,
         status: 'not_started',
-        minutes: null,
-        distance: '',
-        spm: null,
+        rowingData: emptyRowingData(),
         kneeResponse: null,
         notes: null,
-        entryDraft: {
-          minutes: String(plan.targetMinutes),
-          distance: '',
-          spm: '',
-          kneeResponse: 'good',
-          notes: ''
-        }
+        entryDraft: emptyRowingDraft()
       },
       {
         id: 'cool-down',
         kind: 'cooldown',
         activity: 'row',
         targetMinutes: 5,
-        actualMinutes: null,
+        rowingData: emptyRowingData(),
         status: 'not_started',
         kneeResponse: null,
-        entryDraft: { actualMinutes: '', kneeResponse: 'good' }
+        entryDraft: emptyRowingDraft()
       }
     ]
   };
@@ -759,7 +978,132 @@ function statusMarkup(status) {
   return '';
 }
 
+function parseElapsedTime(value) {
+  const match = /^(\d{1,3}):([0-5]\d)$/.exec(String(value || '').trim());
+  if (!match) return null;
+  const seconds = Number(match[1]) * 60 + Number(match[2]);
+  return seconds > 0 ? seconds : null;
+}
+
+function formatElapsedTime(seconds) {
+  if (!Number.isInteger(seconds) || seconds <= 0) return '';
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function rowingMetrics(data) {
+  if (!data
+    || !Number.isInteger(data.elapsedSeconds) || data.elapsedSeconds <= 0
+    || !Number.isInteger(data.meters) || data.meters <= 0) return null;
+  return {
+    splitSeconds: (data.elapsedSeconds * 500) / data.meters
+  };
+}
+
+function formatSplit(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return '';
+  const rounded = Math.round(seconds);
+  return `${Math.floor(rounded / 60)}:${String(rounded % 60).padStart(2, '0')}`;
+}
+
+function rowingMetricText(data) {
+  const metrics = rowingMetrics(data);
+  if (!metrics) return '';
+  return `500 m split: ${formatSplit(metrics.splitSeconds)}`;
+}
+
+function rowingDraftForStep(step) {
+  if (step.entryDraft?.elapsedTime !== undefined) return step.entryDraft;
+  const data = step.rowingData;
+  if (data) {
+    return {
+      ...emptyRowingDraft(step.entryDraft?.kneeResponse || step.kneeResponse || 'good', step.entryDraft?.notes || step.notes || ''),
+      elapsedTime: formatElapsedTime(data.elapsedSeconds),
+      meters: data.meters == null ? '' : String(data.meters),
+      resistance: data.resistance == null ? '' : String(data.resistance),
+      spm: data.spm == null ? '' : String(data.spm)
+    };
+  }
+  const legacyMinutes = step.actualMinutes ?? step.entryDraft?.actualMinutes ?? step.minutes ?? step.entryDraft?.minutes;
+  const legacySpm = step.spm ?? step.entryDraft?.spm ?? '';
+  return {
+    ...emptyRowingDraft(step.entryDraft?.kneeResponse || step.kneeResponse || 'good', step.entryDraft?.notes || step.notes || ''),
+    elapsedTime: legacyMinutes == null || legacyMinutes === '' ? '' : `${Number(legacyMinutes)}:00`,
+    meters: step.distance ?? step.entryDraft?.distance ?? '',
+    resistance: '',
+    spm: legacySpm === '' || legacySpm == null ? '' : String(legacySpm)
+  };
+}
+
+function rowingDataFromDraft(draft) {
+  const elapsedSeconds = parseElapsedTime(draft.elapsedTime);
+  const meters = draft.meters === '' ? null : Number(draft.meters);
+  const resistance = draft.resistance === '' ? null : Number(draft.resistance);
+  const spm = draft.spm === '' ? null : Number(draft.spm);
+  return {
+    elapsedSeconds,
+    meters: Number.isInteger(meters) && meters > 0 ? meters : null,
+    resistance: Number.isInteger(resistance) && resistance >= 1 && resistance <= 10 ? resistance : null,
+    spm: Number.isFinite(spm) && spm > 0 ? spm : null
+  };
+}
+
+function renderRowingFields(scope, draft) {
+  const elapsedTime = draft.elapsedTime || '';
+  const meters = draft.meters ?? '';
+  const resistance = draft.resistance ?? '';
+  const spm = draft.spm ?? '';
+  const data = rowingDataFromDraft(draft);
+  return `<div class="rowing-fields" data-rowing-container="${scope}">
+    <div class="g2">
+      <div>
+        <label for="${scope}-elapsed">Time (mm:ss)</label>
+        <input id="${scope}-elapsed" data-rowing-field="elapsedTime" type="text" inputmode="numeric" autocomplete="off" placeholder="mm:ss" maxlength="8" value="${escapeHTML(elapsedTime)}">
+      </div>
+      <div>
+        <label for="${scope}-meters">Meters rowed</label>
+        <input id="${scope}-meters" data-rowing-field="meters" type="number" min="1" step="1" inputmode="numeric" value="${escapeHTML(meters)}">
+      </div>
+    </div>
+    <div class="g2">
+      <div>
+        <label for="${scope}-resistance">Resistance (1–10)</label>
+        <select id="${scope}-resistance" data-rowing-field="resistance">
+          <option value="">Choose resistance</option>
+          ${Array.from({ length: 10 }, (_, index) => index + 1).map(value =>
+            `<option value="${value}"${String(value) === String(resistance) ? ' selected' : ''}>${value}</option>`
+          ).join('')}
+        </select>
+      </div>
+      <div>
+        <label for="${scope}-spm">Strokes/min (SPM)</label>
+        <input id="${scope}-spm" data-rowing-field="spm" type="number" min="0" step="any" inputmode="decimal" value="${escapeHTML(spm)}">
+      </div>
+    </div>
+    <p class="rowing-metrics" data-rowing-metrics aria-live="polite">${escapeHTML(rowingMetricText(data))}</p>
+  </div>`;
+}
+
 function renderWarmupStep(workout, step) {
+  const usesRowingData = workout.programVersion === PROGRAM_VERSION;
+  if (usesRowingData) {
+    const draft = rowingDraftForStep(step);
+    const isCoolDown = step.kind === 'cooldown';
+    const name = isCoolDown ? 'Cool-down' : 'Warm-up';
+    const pace = isCoolDown ? 'very easy' : 'easy';
+    return `<article class="card step-card">
+      ${statusMarkup(step.status)}
+      <h3>${name}: ${step.targetMinutes}-minute ${pace} row</h3>
+      <p class="step-description">Target: ${step.targetMinutes} minutes</p>
+      ${renderRowingFields('warmup-row', draft)}
+      <label for="kneeResponse" class="field-spaced">Knee response</label>
+      <select id="kneeResponse" data-rowing-knee>${optionMarkup(KNEE_OPTIONS, draft.kneeResponse, 'Choose response')}</select>
+      <div class="step-actions">
+        <button type="button" class="primary-action" data-action="complete-warmup">COMPLETE</button>
+        <button type="button" class="danger-action" data-action="skip-warmup">SKIP</button>
+        <button type="button" class="secondary-action" data-action="previous-step" ${workout.currentStepIndex === 0 ? 'disabled' : ''}>Previous</button>
+      </div>
+    </article>`;
+  }
   const draft = step.entryDraft || {
     actualMinutes: step.actualMinutes ?? '',
     kneeResponse: step.kneeResponse || 'good'
@@ -793,6 +1137,23 @@ function previousPerformanceMarkup(exerciseId) {
     return `${load} · ${set[config.valueKey]}${config.valueKey === 'secondsPerSide' ? ' sec/side' : config.valueKey === 'repsPerSide' ? '/side' : ''}`;
   });
   return `<div class="previous-performance"><strong>Last workout:</strong> ${sets.join(' • ')}</div>`;
+}
+
+function exerciseReferenceMarkup(exerciseId) {
+  const exercise = EXERCISES[exerciseId];
+  if (!exercise || exercise.retired) return '';
+  const name = exercise.currentName || exercise.name;
+  return `<article class="ref" data-exercise-id="${exerciseId}">
+    <h3>${escapeHTML(name)}</h3>
+    ${exercise.image ? `<img src="${escapeHTML(exercise.image)}" alt="${escapeHTML(name)} illustration">` : ''}
+    ${exercise.cues ? `<p>${escapeHTML(exercise.cues)}</p>` : ''}
+    ${exercise.videoUrl ? `<a class="watch-form" href="${escapeHTML(exercise.videoUrl)}" target="_blank" rel="noopener noreferrer">WATCH FORM ↗</a>` : ''}
+    ${exercise.aceUrl ? `<a href="${escapeHTML(exercise.aceUrl)}" target="_blank" rel="noopener noreferrer">ACE guidance ↗</a>` : ''}
+  </article>`;
+}
+
+function renderExerciseLibrary() {
+  $('#refs').innerHTML = EXERCISE_LIBRARY_IDS.map(exerciseReferenceMarkup).join('');
 }
 
 function setDraftMarkup(exerciseId, exercise, step) {
@@ -833,16 +1194,21 @@ function setDraftMarkup(exerciseId, exercise, step) {
 
 function renderExerciseStep(workout, step) {
   const exercise = EXERCISES[step.exerciseId];
+  if (exercise.retired && step.status !== 'completed') {
+    return renderRetiredExerciseStep(workout, step);
+  }
+  if (exercise.retired) return renderCompletedRetiredExerciseStep(workout, step);
   const draft = exerciseDraftForStep(step);
   const kneeResponse = step.status === 'completed' ? step.kneeResponse : draft.kneeResponse;
   const effort = step.status === 'completed' ? step.effort : draft.effort;
   const notes = step.status === 'completed' ? step.notes : draft.notes;
+  const exerciseName = exercise.currentName || exercise.name;
   return `<article class="card step-card">
     ${statusMarkup(step.status)}
-    <h3>${exercise.name}</h3>
-    <button type="button" class="reference-action" data-action="open-exercise-form" data-exercise-id="${step.exerciseId}">FORM / ILLUSTRATION</button>
+    <h3>${escapeHTML(exerciseName)}</h3>
+    <button type="button" class="reference-action" data-action="open-exercise-form" data-exercise-id="${step.exerciseId}">FORM / ${exercise.image ? 'ILLUSTRATION' : 'CUES'}</button>
     ${previousPerformanceMarkup(step.exerciseId)}
-    <p class="step-description">${exercise.valueLabel}${exercise.implement === 'two_dumbbells' ? ' · weight per dumbbell' : exercise.implement === 'one_dumbbell' ? ' · one dumbbell' : ''}</p>
+    <p class="step-description">${step.variation ? `${escapeHTML(step.variation)} ` : ''}${exercise.valueLabel}${exercise.implement === 'two_dumbbells' ? ' · weight per dumbbell' : exercise.implement === 'one_dumbbell' ? ' · one dumbbell' : ''}</p>
     <div id="setEntries">${setDraftMarkup(step.exerciseId, exercise, step)}</div>
     <button type="button" class="add-set" data-action="add-set">+ ADD SET</button>
     <div class="g2">
@@ -867,7 +1233,56 @@ function renderExerciseStep(workout, step) {
   </article>`;
 }
 
+function renderRetiredExerciseStep(workout, step) {
+  const reason = step.skipReason || '';
+  return `<article class="card step-card retired-step">
+    ${statusMarkup(step.status)}
+    <h3>${escapeHTML(EXERCISES[step.exerciseId].name)} — retired</h3>
+    <p class="step-description">This movement is no longer part of the current program. Its saved workout data is preserved; do not perform it. Skip this step to continue.</p>
+    ${reason ? `<p>Skip reason: ${escapeHTML(reason)}</p>` : ''}
+    <div class="step-actions">
+      <button type="button" class="danger-action" data-action="skip-retired-exercise">SKIP RETIRED EXERCISE</button>
+      <button type="button" class="secondary-action" data-action="previous-step" ${workout.currentStepIndex === 0 ? 'disabled' : ''}>Previous</button>
+    </div>
+  </article>`;
+}
+
+function renderCompletedRetiredExerciseStep(workout, step) {
+  const exercise = EXERCISES[step.exerciseId];
+  const sets = step.sets.map(set =>
+    `<p>Set ${set.setNumber}: ${escapeHTML(formatLoad(set.load))} · ${escapeHTML(formatSet(set, exercise))}</p>`
+  ).join('');
+  return `<article class="card step-card retired-step">
+    ${statusMarkup(step.status)}
+    <h3>${escapeHTML(exercise.name)} — retired historical exercise</h3>
+    <p class="step-description">Historical results are shown as recorded. This movement is no longer prescribed.</p>
+    ${sets}
+    <div class="step-actions">
+      <button type="button" class="primary-action" data-action="continue-step">CONTINUE</button>
+      <button type="button" class="secondary-action" data-action="previous-step" ${workout.currentStepIndex === 0 ? 'disabled' : ''}>Previous</button>
+    </div>
+  </article>`;
+}
+
 function renderRowStep(workout, step) {
+  const usesRowingData = workout.programVersion === PROGRAM_VERSION;
+  if (usesRowingData) {
+    const draft = rowingDraftForStep(step);
+    return `<article class="card step-card">
+      ${statusMarkup(step.status)}
+      <h3>Main rowing block</h3>
+      <p class="step-description"><strong>${escapeHTML(workout.week)}:</strong> ${escapeHTML(step.prescription)}. Target: ${step.targetMinutes} minutes.</p>
+      ${renderRowingFields('main-row', draft)}
+      <label for="rowKnee" class="field-spaced">Knee response</label>
+      <select id="rowKnee" data-rowing-knee>${optionMarkup(KNEE_OPTIONS, draft.kneeResponse, 'Choose response')}</select>
+      <label for="rowNotes" class="field-spaced">Optional notes</label>
+      <textarea id="rowNotes" data-rowing-notes>${escapeHTML(draft.notes || '')}</textarea>
+      <div class="step-actions">
+        <button type="button" class="primary-action" data-action="save-row">SAVE &amp; NEXT</button>
+        <button type="button" class="secondary-action" data-action="previous-step" ${workout.currentStepIndex === 0 ? 'disabled' : ''}>Previous</button>
+      </div>
+    </article>`;
+  }
   const draft = step.entryDraft || {
     minutes: step.minutes ?? step.targetMinutes,
     distance: step.distance ?? '',
@@ -952,7 +1367,8 @@ function openExerciseForm(exerciseId, opener) {
   referenceOpener = opener;
   const content = $('#exerciseFormContent');
   content.replaceChildren(reference.cloneNode(true));
-  $('#exerciseFormTitle').textContent = `${EXERCISES[exerciseId].name} form reference`;
+  const exercise = EXERCISES[exerciseId];
+  $('#exerciseFormTitle').textContent = `${exercise.currentName || exercise.name} form reference`;
   $('#exerciseFormDialog').hidden = false;
   $('#closeExerciseForm').focus();
 }
@@ -967,7 +1383,7 @@ function closeExerciseForm() {
 
 function handleWorkoutDraftInput(event) {
   const target = event.target;
-  if (!target.matches('[data-draft-field], [data-set-value], [data-set-weight], [data-set-load-kind]')) return;
+  if (!target.matches('[data-draft-field], [data-set-value], [data-set-weight], [data-set-load-kind], [data-rowing-field], [data-rowing-knee], [data-rowing-notes]')) return;
   if (event.type === 'input' && target.tagName === 'SELECT') return;
   if (event.type === 'change' && target.tagName !== 'SELECT') return;
   if (target.matches('[data-set-load-kind]')) {
@@ -980,20 +1396,65 @@ function handleWorkoutDraftInput(event) {
     if (step.kind === 'exercise') {
       step.entryDraft = readExerciseDraft(step);
     } else {
+      if ($('#workoutContent [data-rowing-container]')) {
+        step.rowingData ||= emptyRowingData();
+      }
       step.entryDraft = readStepDraft(step);
     }
   });
+  const rowingContainer = target.closest('[data-rowing-container]');
+  if (rowingContainer) {
+    updateRowingMetricPreview(rowingContainer);
+    clearRowingValidationNotice();
+  }
   renderActiveBanner();
+}
+
+function clearRowingValidationNotice() {
+  if ($('#appNotice').textContent === ROWING_VALIDATION_MESSAGE) clearNotice();
+}
+
+function readRowingDraft(container) {
+  const value = field => container.querySelector(`[data-rowing-field="${field}"]`)?.value || '';
+  return {
+    elapsedTime: value('elapsedTime'),
+    meters: value('meters'),
+    resistance: value('resistance'),
+    spm: value('spm')
+  };
+}
+
+function updateRowingMetricPreview(container) {
+  const output = container.querySelector('[data-rowing-metrics]');
+  if (!output) return;
+  output.textContent = rowingMetricText(rowingDataFromDraft(readRowingDraft(container)));
 }
 
 function readStepDraft(step) {
   if (step.kind === 'warmup' || step.kind === 'cooldown') {
+    const rowingContainer = $('#workoutContent [data-rowing-container]');
+    if (rowingContainer) {
+      return {
+        ...(step.entryDraft || {}),
+        ...readRowingDraft(rowingContainer),
+        kneeResponse: $('#kneeResponse').value
+      };
+    }
     return {
       actualMinutes: $('#actualMinutes').value,
       kneeResponse: $('#kneeResponse').value
     };
   }
   if (step.kind === 'row') {
+    const rowingContainer = $('#workoutContent [data-rowing-container]');
+    if (rowingContainer) {
+      return {
+        ...(step.entryDraft || {}),
+        ...readRowingDraft(rowingContainer),
+        kneeResponse: $('#rowKnee').value,
+        notes: $('#rowNotes').value
+      };
+    }
     return {
       minutes: $('#rowMinutes').value,
       distance: $('#rowDistance').value,
@@ -1040,6 +1501,29 @@ function completeWarmup() {
   const workout = activeWorkout();
   const step = workout?.steps[workout.currentStepIndex];
   if (!step || !['warmup', 'cooldown'].includes(step.kind)) return;
+  if ($('#workoutContent [data-rowing-container]')) {
+    const draft = readStepDraft(step);
+    const data = rowingDataFromDraft(draft);
+    if (!validRowingData(data, true)) {
+      setNotice(ROWING_VALIDATION_MESSAGE, true);
+      return;
+    }
+    if (!KNEE_OPTIONS.some(([key]) => key === draft.kneeResponse)) {
+      setNotice('Choose a knee response before completing this step.', true);
+      return;
+    }
+    clearNotice();
+    updateActiveWorkout(current => {
+      const target = current.steps[current.currentStepIndex];
+      target.rowingData = data;
+      target.kneeResponse = draft.kneeResponse;
+      target.status = 'completed';
+      delete target.entryDraft;
+      current.currentStepIndex += 1;
+    });
+    renderWorkout();
+    return;
+  }
   const minutes = Number($('#actualMinutes').value);
   const kneeResponse = $('#kneeResponse').value;
   if (!validPositiveNumber(minutes)) {
@@ -1066,6 +1550,13 @@ function skipWarmup() {
   updateActiveWorkout(workout => {
     const step = workout.steps[workout.currentStepIndex];
     if (!step || !['warmup', 'cooldown'].includes(step.kind)) return;
+    if ($('#workoutContent [data-rowing-container]')) {
+      step.rowingData ||= emptyRowingData();
+      step.entryDraft = readStepDraft(step);
+      step.status = 'skipped';
+      workout.currentStepIndex += 1;
+      return;
+    }
     const minutes = $('#actualMinutes').value;
     const kneeResponse = $('#kneeResponse').value;
     const enteredMinutes = Number(minutes);
@@ -1181,6 +1672,24 @@ function skipExercise() {
   saveSkippedExercise(step);
 }
 
+function skipRetiredExercise() {
+  updateActiveWorkout(workout => {
+    const step = workout.steps[workout.currentStepIndex];
+    if (!step || step.kind !== 'exercise' || !EXERCISES[step.exerciseId]?.retired) return;
+    step.status = 'skipped';
+    step.skipReason ||= 'Retired in current program';
+    workout.currentStepIndex += 1;
+  });
+  renderWorkout();
+}
+
+function continueStep() {
+  updateActiveWorkout(workout => {
+    if (workout.currentStepIndex < workout.steps.length) workout.currentStepIndex += 1;
+  });
+  renderWorkout();
+}
+
 function saveSkippedExercise(step) {
   const skipReason = $('#skipReason').value.trim().slice(0, 120);
   const entryDraft = readExerciseDraft(step);
@@ -1199,6 +1708,33 @@ function saveSkippedExercise(step) {
 }
 
 function saveRowStep() {
+  const workout = activeWorkout();
+  const currentStep = workout?.steps[workout.currentStepIndex];
+  if (!currentStep || currentStep.kind !== 'row') return;
+  if ($('#workoutContent [data-rowing-container]')) {
+    const draft = readStepDraft(currentStep);
+    const data = rowingDataFromDraft(draft);
+    if (!validRowingData(data, true)) {
+      setNotice(ROWING_VALIDATION_MESSAGE, true);
+      return;
+    }
+    if (!KNEE_OPTIONS.some(([key]) => key === draft.kneeResponse)) {
+      setNotice('Choose a knee response before continuing.', true);
+      return;
+    }
+    clearNotice();
+    updateActiveWorkout(current => {
+      const step = current.steps[current.currentStepIndex];
+      step.rowingData = data;
+      step.kneeResponse = draft.kneeResponse;
+      step.notes = draft.notes.trim();
+      step.status = 'completed';
+      delete step.entryDraft;
+      current.currentStepIndex += 1;
+    });
+    renderWorkout();
+    return;
+  }
   const minutes = Number($('#rowMinutes').value);
   const distanceInput = $('#rowDistance').value;
   const spmInput = $('#rowSpm').value;
@@ -1265,22 +1801,55 @@ function formatSet(set, exercise) {
   return `${amount} reps`;
 }
 
-function historyStepSummary(step) {
+function historyStepSummary(step, programVersion) {
   if (step.kind === 'warmup' || step.kind === 'cooldown') {
+    if (step.rowingData) {
+      const time = formatElapsedTime(step.rowingData.elapsedSeconds);
+      return `${step.kind === 'warmup' ? 'Warm-up' : 'Cool-down'} ${step.status}${time ? ` · ${time}` : ''}`;
+    }
     return `${step.kind === 'warmup' ? 'Warm-up' : 'Cool-down'} ${step.status}${step.actualMinutes == null ? '' : ` · ${step.actualMinutes} min`}`;
   }
   if (step.kind === 'exercise') {
-    return `${EXERCISES[step.exerciseId].name}: ${step.status}`;
+    const exercise = EXERCISES[step.exerciseId];
+    const name = programVersion === PROGRAM_VERSION
+      ? exercise.currentName || exercise.name
+      : exercise.name;
+    return `${name}${step.variation ? ` (${step.variation})` : ''}: ${step.status}`;
   }
-  if (step.kind === 'row') return `Main row: ${step.status}${step.minutes ? ` · ${step.minutes} min` : ''}`;
+  if (step.kind === 'row') {
+    const time = step.rowingData ? formatElapsedTime(step.rowingData.elapsedSeconds) : '';
+    return `Main row: ${step.status}${time ? ` · ${time}` : step.minutes ? ` · ${step.minutes} min` : ''}`;
+  }
+  if (step.kind === 'optional' && step.activity === 'row') return 'Easy conversational row';
+  if (step.kind === 'optional' && programVersion === PROGRAM_VERSION) {
+    const labels = {
+      walk: 'Comfortable walk',
+      rest: 'Recovery / rest'
+    };
+    return `${labels[step.activity] || step.activity} · ${step.minutes} min`;
+  }
   return `${step.activity} · ${step.minutes} min`;
 }
 
-function appendHistoryStep(container, step) {
+function rowingHistoryDetails(data) {
+  if (!data) return '';
+  if (data.elapsedSeconds === null
+    && data.meters === null
+    && data.resistance === null
+    && data.spm === null) return '';
+  const time = formatElapsedTime(data.elapsedSeconds) || '—';
+  const metrics = rowingMetrics(data);
+  const source = `Time: ${time} · ${data.meters ?? '—'} m · Resistance: ${data.resistance ?? '—'} · SPM: ${data.spm ?? '—'}`;
+  return metrics
+    ? `${source} · ${formatSplit(metrics.splitSeconds)} / 500 m`
+    : source;
+}
+
+function appendHistoryStep(container, step, programVersion) {
   const block = document.createElement('div');
   block.className = 'history-step';
   const heading = document.createElement('strong');
-  heading.textContent = historyStepSummary(step);
+  heading.textContent = historyStepSummary(step, programVersion);
   block.append(heading);
   if (step.kind === 'exercise') {
     if (step.status === 'completed') {
@@ -1300,6 +1869,14 @@ function appendHistoryStep(container, step) {
       block.append(reason);
     }
   } else if (step.kind === 'warmup' || step.kind === 'cooldown') {
+    if (step.rowingData) {
+      const details = rowingHistoryDetails(step.rowingData);
+      if (details) {
+        const rowing = document.createElement('p');
+        rowing.textContent = details;
+        block.append(rowing);
+      }
+    }
     if (step.kneeResponse) {
       const response = document.createElement('p');
       response.textContent = `Knees: ${kneeLabel(step.kneeResponse)}`;
@@ -1307,11 +1884,15 @@ function appendHistoryStep(container, step) {
     }
   } else if (step.kind === 'row') {
     const details = document.createElement('p');
-    details.textContent = `${step.prescription} · ${step.distance ?? '—'} m · ${step.spm ?? '—'} spm · Knees: ${kneeLabel(step.kneeResponse)}${step.notes ? ` · ${step.notes}` : ''}`;
+    details.textContent = step.rowingData
+      ? `${step.prescription} · ${rowingHistoryDetails(step.rowingData)} · Knees: ${kneeLabel(step.kneeResponse)}${step.notes ? ` · ${step.notes}` : ''}`
+      : `${step.prescription} · ${step.distance ?? '—'} m · ${step.spm ?? '—'} spm · Knees: ${kneeLabel(step.kneeResponse)}${step.notes ? ` · ${step.notes}` : ''}`;
     block.append(details);
   } else if (step.kind === 'optional') {
     const details = document.createElement('p');
-    details.textContent = step.notes ? `Notes: ${step.notes}` : '';
+    details.textContent = step.activity === 'row'
+      ? `${rowingHistoryDetails(step.rowingData)}${step.notes ? ` · Notes: ${step.notes}` : ''}`
+      : step.notes ? `Notes: ${step.notes}` : '';
     block.append(details);
   }
   container.append(block);
@@ -1329,7 +1910,7 @@ function workoutSummary(workout) {
     const cooldown = workout.steps.find(step => step.kind === 'cooldown');
     return `${workout.week} · Warm-up ${warmup.status} · 1 rowing block · Cool-down ${cooldown.status}`;
   }
-  return historyStepSummary(workout.steps[0]);
+  return historyStepSummary(workout.steps[0], workout.programVersion);
 }
 
 function renderHistoryCard(workout) {
@@ -1342,7 +1923,7 @@ function renderHistoryCard(workout) {
   const info = document.createElement('p');
   info.textContent = workoutSummary(workout);
   details.append(info);
-  workout.steps.forEach(step => appendHistoryStep(details, step));
+  workout.steps.forEach(step => appendHistoryStep(details, step, workout.programVersion));
   card.append(details);
   if (workout.status === 'in_progress') {
     const actions = document.createElement('div');
@@ -1386,6 +1967,16 @@ function renderHistory() {
   }
   const workouts = [...storage.workouts].sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt));
   workouts.forEach(workout => list.append(renderHistoryCard(workout)));
+}
+
+function toggleOptionalActivityFields() {
+  const isRowing = $('#sa').value === 'row';
+  $('#optionalMinutesField').hidden = isRowing;
+  const rowFields = $('#optionalRowFields');
+  rowFields.hidden = !isRowing;
+  if (isRowing && !rowFields.firstElementChild) {
+    rowFields.innerHTML = renderRowingFields('saturday-row', emptyRowingDraft());
+  }
 }
 
 function deleteWorkout(workoutId, isDraft) {
@@ -1487,13 +2078,23 @@ function handleImport(event) {
 
 function saveOptionalActivity(event) {
   event.preventDefault();
+  const activity = $('#sa').value;
+  let rowingData = null;
+  if (activity === 'row') {
+    const container = $('#optionalRowFields [data-rowing-container]');
+    rowingData = rowingDataFromDraft(readRowingDraft(container));
+    if (!validRowingData(rowingData, true)) {
+      setNotice(ROWING_VALIDATION_MESSAGE, true);
+      return;
+    }
+  }
   const save = () => {
-    const activity = $('#sa').value;
     const minutes = Number($('#sm').value);
     const now = new Date().toISOString();
     const workout = {
       id: makeId(),
       type: 'optional',
+      programVersion: PROGRAM_VERSION,
       planId: 'saturday-optional',
       title: 'Optional activity',
       day: 'Saturday',
@@ -1506,12 +2107,14 @@ function saveOptionalActivity(event) {
         kind: 'optional',
         status: 'completed',
         activity,
-        minutes,
+        ...(activity === 'row' ? { rowingData } : { minutes }),
         notes: $('#sn').value.trim()
       }]
     };
     if (saveEnvelope([...storage.workouts, workout])) {
       $('#sn').value = '';
+      $('#optionalRowFields').innerHTML = '';
+      if (activity === 'row') toggleOptionalActivityFields();
       setNotice('Optional-day log saved.');
     }
   };
@@ -1527,6 +2130,7 @@ function handleWorkoutAction(event) {
   if (action === 'skip-warmup') skipWarmup();
   if (action === 'save-exercise') saveExercise();
   if (action === 'skip-exercise') skipExercise();
+  if (action === 'skip-retired-exercise') skipRetiredExercise();
   if (action === 'save-row') saveRowStep();
   if (action === 'add-set') addSet();
   if (action === 'remove-set') removeSet(Number(button.dataset.setIndex));
@@ -1535,6 +2139,7 @@ function handleWorkoutAction(event) {
     if (workout) goToStep(workout.currentStepIndex - 1);
   }
   if (action === 'finish-workout') finishWorkout();
+  if (action === 'continue-step') continueStep();
   if (action === 'exit-workout') exitWorkout();
   if (action === 'open-exercise-form') openExerciseForm(button.dataset.exerciseId, button);
 }
@@ -1542,9 +2147,26 @@ function handleWorkoutAction(event) {
 function init() {
   loadStorage();
   updateStorageNotice();
+  renderExerciseLibrary();
+  toggleOptionalActivityFields();
   rowPlan();
   renderActiveBanner();
   $('#rw').addEventListener('change', rowPlan);
+  $('#sa').addEventListener('change', toggleOptionalActivityFields);
+  $('#optionalRowFields').addEventListener('input', event => {
+    const container = event.target.closest('[data-rowing-container]');
+    if (container) {
+      updateRowingMetricPreview(container);
+      clearRowingValidationNotice();
+    }
+  });
+  $('#optionalRowFields').addEventListener('change', event => {
+    const container = event.target.closest('[data-rowing-container]');
+    if (container) {
+      updateRowingMetricPreview(container);
+      clearRowingValidationNotice();
+    }
+  });
   document.querySelectorAll('[data-start-workout]').forEach(button =>
     button.addEventListener('click', () => startWorkout(button.dataset.startWorkout))
   );

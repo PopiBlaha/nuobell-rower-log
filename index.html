@@ -62,26 +62,29 @@
         <form id="optionalForm" class="card">
           <label for="sa">Activity</label>
           <select id="sa">
-            <option>Easy conversational row</option>
-            <option>Comfortable walk</option>
-            <option>Recovery / rest</option>
+            <option value="row">Easy conversational row</option>
+            <option value="walk">Comfortable walk</option>
+            <option value="rest">Recovery / rest</option>
           </select>
-          <label for="sm" class="field-spaced">Minutes</label>
-          <select id="sm">
-            <option>0</option>
-            <option>5</option>
-            <option>10</option>
-            <option>15</option>
-            <option>20</option>
-            <option>25</option>
-            <option>30</option>
-            <option>35</option>
-            <option>40</option>
-            <option>45</option>
-            <option>50</option>
-            <option>55</option>
-            <option>60</option>
-          </select>
+          <div id="optionalMinutesField">
+            <label for="sm" class="field-spaced">Minutes</label>
+            <select id="sm">
+              <option>0</option>
+              <option>5</option>
+              <option>10</option>
+              <option>15</option>
+              <option>20</option>
+              <option>25</option>
+              <option>30</option>
+              <option>35</option>
+              <option>40</option>
+              <option>45</option>
+              <option>50</option>
+              <option>55</option>
+              <option>60</option>
+            </select>
+          </div>
+          <div id="optionalRowFields" hidden></div>
           <label for="sn" class="field-spaced">Notes</label>
           <textarea id="sn"></textarea>
           <button class="save" type="submit">Save optional-day log</button>
@@ -90,63 +93,8 @@
 
       <section id="Reference">
         <h2>Exercise Reference</h2>
-        <div class="note">Illustrations are quick reminders. Use the linked ACE resources for additional form guidance.</div>
-        <div id="refs" class="refs">
-          <article class="ref" data-exercise-id="romanian-deadlift">
-            <h3>Romanian Deadlift</h3>
-            <img src="assets/exercise-01.jpg">
-            <p>Soft knees; hinge at hips; weights close; neutral back.</p>
-            <a href="https://www.acefitness.org/continuing-education/certified/may-2025/8865/the-ace-do-it-better-series-the-romanian-deadlift/" target="_blank">ACE guidance ↗</a>
-          </article>
-          <article class="ref" data-exercise-id="floor-press">
-            <h3>Floor Press</h3>
-            <img src="assets/exercise-02.jpg">
-            <p>Lower under control until upper arms meet floor; press smoothly.</p>
-            <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
-          </article>
-          <article class="ref" data-exercise-id="supported-one-arm-row">
-            <h3>Supported One-Arm Row</h3>
-            <img src="assets/exercise-03.jpg">
-            <p>Brace on a stable support; row without twisting.</p>
-            <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
-          </article>
-          <article class="ref" data-exercise-id="standing-calf-raise">
-            <h3>Standing Calf Raise</h3>
-            <img src="assets/exercise-04.jpg">
-            <p>Use support; rise, pause and lower slowly.</p>
-            <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
-          </article>
-          <article class="ref" data-exercise-id="bird-dog">
-            <h3>Bird Dog</h3>
-            <img src="assets/exercise-05.jpg">
-            <p>Extend opposite arm and leg while keeping trunk still.</p>
-            <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
-          </article>
-          <article class="ref" data-exercise-id="glute-bridge">
-            <h3>Glute Bridge</h3>
-            <img src="assets/exercise-06.jpg">
-            <p>Comfortable knee bend; squeeze glutes to lift hips.</p>
-            <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
-          </article>
-          <article class="ref" data-exercise-id="hammer-curl">
-            <h3>Hammer Curl</h3>
-            <img src="assets/exercise-07.jpg">
-            <p>Palms inward; upper arms quiet; no swinging.</p>
-            <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
-          </article>
-          <article class="ref" data-exercise-id="seated-overhead-press">
-            <h3>Seated Overhead Press</h3>
-            <img src="assets/exercise-08.jpg">
-            <p>Stable chair with back support; light load; keep breathing.</p>
-            <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
-          </article>
-          <article class="ref" data-exercise-id="suitcase-hold">
-            <h3>Suitcase Hold</h3>
-            <img src="assets/exercise-09.jpg">
-            <p>Stand tall with one dumbbell; resist leaning.</p>
-            <a href="https://www.acefitness.org/resources/everyone/exercise-library/" target="_blank">ACE guidance ↗</a>
-          </article>
-        </div>
+        <div class="note">Exercise cues and suitable references for the current strength program.</div>
+        <div id="refs" class="refs"></div>
       </section>
 
       <section id="History">

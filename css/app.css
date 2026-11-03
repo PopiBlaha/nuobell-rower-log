@@ -23,6 +23,8 @@ nav button{background:transparent;color:#52606c;font-size:11px;padding:8px 1px}
 nav button.active{background:#eaf1f8;color:#17365d}
 .ref img{width:100%;border-radius:11px}
 .ref a{color:#075dad;font-weight:750}
+.ref a.watch-form{display:inline-block;margin:0 12px 8px 0}
+.retired-step{border-left:5px solid #d29315}
 .note{background:#fff3cd;border-radius:12px;padding:11px}
 .actions{display:flex;gap:8px}
 .actions>*{flex:1}
@@ -55,6 +57,10 @@ textarea{font-size:17px}
 .step-card h3{margin:0 0 8px;color:#17365d}
 .step-description{color:#52606c;margin:0 0 12px}
 .previous-performance{background:#eaf1f8;border-radius:10px;padding:10px;margin:10px 0;font-size:14px}
+.rowing-fields{margin:10px 0}
+.rowing-fields .g2>*{min-width:0}
+.rowing-fields input,.rowing-fields select{min-width:0}
+.rowing-metrics{min-height:44px;background:#eaf1f8;border-radius:10px;padding:11px;margin:8px 0 0;font-weight:750;color:#17365d;overflow-wrap:anywhere}
 .step-status{font-weight:750;color:#177443}
 .step-status.skipped{color:#942525}
 .set-entry{border:1px solid #dde5ed;border-radius:12px;padding:10px;margin:10px 0}
