@@ -21,6 +21,17 @@
           <button type="button" id="replaceLegacy">Start using Version 2</button>
         </div>
       </div>
+      <div class="walk-launch card">
+        <button type="button" id="openWalkTracker" class="walk-launch-action">LOG A WALK</button>
+      </div>
+      <div id="activeWalkBanner" class="active-banner walk-banner" hidden>
+        <span id="activeWalkLabel" role="status" aria-live="polite"></span>
+        <div class="walk-recovery-actions">
+          <button type="button" id="resumeActiveWalk" class="primary-action">RESUME</button>
+          <button type="button" id="finishActiveWalk" class="secondary-action">FINISH</button>
+          <button type="button" id="discardActiveWalk" class="danger-action">DISCARD</button>
+        </div>
+      </div>
       <div id="activeWorkoutBanner" class="active-banner" hidden>
         <span id="activeWorkoutLabel"></span>
         <button type="button" id="resumeActiveWorkout">Resume workout</button>
@@ -146,6 +157,16 @@
         <h2 id="exerciseFormTitle" class="visually-hidden">Exercise form reference</h2>
         <div id="exerciseFormContent"></div>
         <button type="button" id="closeExerciseForm" class="primary-action">CLOSE FORM</button>
+      </div>
+    </div>
+
+    <div id="walkDialog" class="modal walk-modal" hidden role="dialog" aria-modal="true" aria-labelledby="walkTitle">
+      <div class="modal-card walk-card">
+        <div class="walk-heading">
+          <h2 id="walkTitle">Walk tracker</h2>
+          <button type="button" id="closeWalkTracker" class="walk-close" aria-label="Close walk tracker">CLOSE</button>
+        </div>
+        <div id="walkContent"></div>
       </div>
     </div>
 

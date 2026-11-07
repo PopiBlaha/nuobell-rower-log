@@ -12,6 +12,34 @@ const EFFORT_OPTIONS = [
   ['hard', 'Hard']
 ];
 const ROWING_VALIDATION_MESSAGE = 'Enter a valid time, positive meters, resistance from 1 to 10, and positive SPM.';
+const WALK_METERS_PER_MILE = 1609.344;
+// Fixes too uncertain to use even as a baseline tend to create GPS drift.
+const MAX_GPS_ACCURACY_METERS = 75;
+// Only report the signal as ready once the reported uncertainty is modest.
+const GOOD_GPS_ACCURACY_METERS = 25;
+const WEAK_GPS_ACCURACY_METERS = 50;
+// Ignore very small coordinate changes that are commonly stationary GPS noise.
+const MIN_GPS_MOVEMENT_METERS = 5;
+// A single segment this long is more likely a GPS jump than a walking step.
+const MAX_GPS_JUMP_METERS = 250;
+// Walking faster than about 16 km/h is not a credible GPS segment.
+const MAX_WALKING_SPEED_METERS_PER_SECOND = 4.5;
+// Never bridge a long fix gap that may represent time in the background.
+const MAX_GPS_FIX_GAP_SECONDS = 60;
+// Less than about 53 feet is too little distance for a useful average pace.
+const MIN_USABLE_GPS_DISTANCE_MILES = 0.01;
+const GPS_WATCH_OPTIONS = { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 };
+const WALK_GPS_STATUSES = [
+  'requesting',
+  'ready',
+  'improving',
+  'weak',
+  'denied',
+  'unavailable',
+  'timeout',
+  'unsupported'
+];
+const WALK_DISTANCE_SOURCES = ['iphone-gps', 'apple-watch-manual', 'manual'];
 const EXERCISES = {
   'romanian-deadlift': {
     name: 'Romanian Deadlift',
@@ -250,6 +278,8 @@ let storage = { mode: 'empty', workouts: [], legacyRaw: null };
 let pendingPlanId = null;
 let pendingConfirmation = null;
 let referenceOpener = null;
+let walkTimer = null;
+let walkWatchId = null;
 
 function makeId() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -330,6 +360,78 @@ function isValidKneeResponse(value) {
   return value == null || value === '' || KNEE_OPTIONS.some(([key]) => key === value);
 }
 
+function validWalkDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function validWalkPosition(position) {
+  return position === null || (position
+    && Number.isFinite(position.latitude)
+    && position.latitude >= -90
+    && position.latitude <= 90
+    && Number.isFinite(position.longitude)
+    && position.longitude >= -180
+    && position.longitude <= 180
+    && Number.isFinite(position.accuracy)
+    && position.accuracy >= 0
+    && position.accuracy <= MAX_GPS_ACCURACY_METERS
+    && Number.isFinite(position.timestamp)
+    && position.timestamp > 0);
+}
+
+function validActiveWalk(walk) {
+  if (!walk
+    || walk.activityType !== 'walk'
+    || typeof walk.id !== 'string'
+    || !walk.id
+    || !validWalkDate(walk.date)
+    || typeof walk.startedAt !== 'string'
+    || Number.isNaN(Date.parse(walk.startedAt))
+    || (walk.endedAt !== null
+      && (typeof walk.endedAt !== 'string' || Number.isNaN(Date.parse(walk.endedAt))))
+    || !Number.isFinite(walk.accumulatedDistanceMeters)
+    || walk.accumulatedDistanceMeters < 0
+    || !validWalkPosition(walk.lastAcceptedPosition)
+    || !WALK_GPS_STATUSES.includes(walk.gpsStatus)) return false;
+  if (walk.endedAt === null) {
+    return walk.gpsDistanceMiles === null
+      && walk.finalDistanceMiles === ''
+      && walk.distanceSource === ''
+      && walk.notes === '';
+  }
+  return (walk.gpsDistanceMiles === null
+      || (Number.isFinite(walk.gpsDistanceMiles) && walk.gpsDistanceMiles >= 0))
+    && typeof walk.finalDistanceMiles === 'string'
+    && (walk.finalDistanceMiles === '' || /^\d+(?:\.\d*)?$/.test(walk.finalDistanceMiles))
+    && WALK_DISTANCE_SOURCES.includes(walk.distanceSource)
+    && typeof walk.notes === 'string';
+}
+
+function validWalkRecord(step) {
+  return step
+    && step.activityType === 'walk'
+    && validWalkDate(step.date)
+    && typeof step.startedAt === 'string'
+    && !Number.isNaN(Date.parse(step.startedAt))
+    && typeof step.endedAt === 'string'
+    && !Number.isNaN(Date.parse(step.endedAt))
+    && Number.isInteger(step.durationSeconds)
+    && step.durationSeconds >= 0
+    && (step.gpsDistanceMiles === null
+      || (Number.isFinite(step.gpsDistanceMiles) && step.gpsDistanceMiles >= 0))
+    && Number.isFinite(step.distanceMiles)
+    && step.distanceMiles > 0
+    && Number.isFinite(step.averagePaceSecondsPerMile)
+    && step.averagePaceSecondsPerMile >= 0
+    && WALK_DISTANCE_SOURCES.includes(step.distanceSource)
+    && typeof step.notes === 'string'
+    && typeof step.createdAt === 'string'
+    && !Number.isNaN(Date.parse(step.createdAt));
+}
+
 function escapeHTML(value) {
   return String(value).replace(/[&<>"']/g, character => ({
     '&': '&amp;',
@@ -379,6 +481,9 @@ function isValidExerciseDraft(draft, exercise) {
 
 function isValidStep(step, programVersion) {
   if (!step || !['completed', 'skipped', 'not_started'].includes(step.status)) return false;
+  if (step.kind === 'walk') {
+    return step.status === 'completed' && validWalkRecord(step);
+  }
   if (step.kind === 'warmup' || step.kind === 'cooldown') {
     if (step.activity !== 'row') return false;
     if (programVersion === PROGRAM_VERSION) {
@@ -482,6 +587,8 @@ function isValidStep(step, programVersion) {
 
 function validateEnvelope(value) {
   if (!value || value.version !== 2 || !Array.isArray(value.workouts)) return false;
+  if (value.activeWalk != null && !validActiveWalk(value.activeWalk)) return false;
+  if (value.activeWalk && value.workouts.some(workout => workout?.id === value.activeWalk.id)) return false;
   const active = value.workouts.filter(workout => workout?.status === 'in_progress');
   const ids = value.workouts.map(workout => workout?.id);
   if (active.length > 1 || new Set(ids).size !== ids.length) return false;
@@ -491,7 +598,7 @@ function validateEnvelope(value) {
       || workout.id.length === 0
       || typeof workout.day !== 'string'
       || typeof workout.title !== 'string'
-      || !['strength', 'row', 'optional'].includes(workout.type)
+      || !['strength', 'row', 'optional', 'walk'].includes(workout.type)
       || !['in_progress', 'completed'].includes(workout.status)
       || typeof workout.startedAt !== 'string'
       || Number.isNaN(Date.parse(workout.startedAt))
@@ -548,6 +655,20 @@ function validateEnvelope(value) {
         && workout.steps[2].id === 'cool-down'
         && workout.steps[2].kind === 'cooldown';
     }
+    if (workout.type === 'walk') {
+      const step = workout.steps[0];
+      return workout.planId === 'anytime-walk'
+        && workout.day === 'Anytime'
+        && workout.title === 'Walk'
+        && workout.status === 'completed'
+        && workout.steps.length === 1
+        && workout.completedAt === step.endedAt
+        && workout.startedAt === step.startedAt
+        && workout.currentStepIndex === 1
+        && step.id === 'walk-activity'
+        && step.kind === 'walk'
+        && step.status === 'completed';
+    }
     return workout.planId === 'saturday-optional'
       && workout.day === 'Saturday'
       && workout.status === 'completed'
@@ -567,7 +688,7 @@ function loadStorage() {
     return;
   }
   if (raw === null) {
-    storage = { mode: 'empty', workouts: [], legacyRaw: null };
+    storage = { mode: 'empty', workouts: [], legacyRaw: null, activeWalk: null };
     return;
   }
   let parsed;
@@ -579,7 +700,7 @@ function loadStorage() {
     return;
   }
   if (Array.isArray(parsed)) {
-    storage = { mode: 'legacy', workouts: [], legacyRaw: raw };
+    storage = { mode: 'legacy', workouts: [], legacyRaw: raw, activeWalk: null };
     return;
   }
   if (!validateEnvelope(parsed)) {
@@ -587,7 +708,7 @@ function loadStorage() {
     setNotice('Workout storage is not a valid Version 2 envelope and was left unchanged.', true);
     return;
   }
-  storage = { mode: 'v2', workouts: parsed.workouts, legacyRaw: null };
+  storage = { mode: 'v2', workouts: parsed.workouts, legacyRaw: null, activeWalk: parsed.activeWalk || null };
 }
 
 function updateStorageNotice() {
@@ -597,12 +718,12 @@ function updateStorageNotice() {
   }
 }
 
-function saveEnvelope(workouts, replacingLegacy = false) {
+function saveEnvelope(workouts, replacingLegacy = false, activeWalk = storage.activeWalk || null) {
   if (storage.mode === 'invalid' || (storage.mode === 'legacy' && !replacingLegacy)) {
     setNotice('Workout data was not changed because its current format must be resolved first.', true);
     return false;
   }
-  const envelope = { version: 2, workouts };
+  const envelope = { version: 2, workouts, ...(activeWalk ? { activeWalk } : {}) };
   if (!validateEnvelope(envelope)) {
     setNotice('The workout change was not saved because it failed Version 2 data validation.', true);
     return false;
@@ -613,7 +734,7 @@ function saveEnvelope(workouts, replacingLegacy = false) {
     setNotice(`Could not save workout data: ${error.message}`, true);
     return false;
   }
-  storage = { mode: 'v2', workouts, legacyRaw: null };
+  storage = { mode: 'v2', workouts, legacyRaw: null, activeWalk };
   updateStorageNotice();
   renderActiveBanner();
   return true;
@@ -655,6 +776,512 @@ function prepareVersion2Storage(onReady) {
 
 function activeWorkout(workouts = storage.workouts) {
   return workouts.find(workout => workout.status === 'in_progress') || null;
+}
+
+function stopWalkWatching() {
+  if (walkWatchId !== null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(walkWatchId);
+    walkWatchId = null;
+  }
+}
+
+function localDateKey(date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+function formatWalkDuration(seconds) {
+  const wholeSeconds = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(wholeSeconds / 3600);
+  const minutes = Math.floor((wholeSeconds % 3600) / 60);
+  const remainder = wholeSeconds % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+}
+
+function formatWalkPace(durationSeconds, distanceMiles) {
+  if (!Number.isFinite(durationSeconds)
+    || durationSeconds <= 0
+    || !Number.isFinite(distanceMiles)
+    || distanceMiles < MIN_USABLE_GPS_DISTANCE_MILES) return '--:-- /mi';
+  const pace = Math.round(durationSeconds / distanceMiles);
+  return `${String(Math.floor(pace / 60)).padStart(2, '0')}:${String(pace % 60).padStart(2, '0')} /mi`;
+}
+
+function walkDistanceSourceLabel(source) {
+  return {
+    'iphone-gps': 'iPhone GPS',
+    'apple-watch-manual': 'Apple Watch (manual entry)',
+    manual: 'Manual'
+  }[source] || 'Manual';
+}
+
+function walkGPSStatusLabel(status) {
+  return {
+    requesting: 'Requesting location',
+    ready: 'GPS ready',
+    improving: 'Improving accuracy',
+    weak: 'GPS signal weak',
+    denied: 'Location permission denied',
+    unavailable: 'Location unavailable',
+    timeout: 'Location request timed out',
+    unsupported: 'Location unavailable in this browser'
+  }[status] || 'Location unavailable';
+}
+
+function walkDurationSeconds(walk, endTime = Date.now()) {
+  const elapsed = endTime - Date.parse(walk.startedAt);
+  return Number.isFinite(elapsed) ? Math.max(0, Math.floor(elapsed / 1000)) : 0;
+}
+
+function walkGPSDistanceMiles(walk) {
+  return walk.accumulatedDistanceMeters / WALK_METERS_PER_MILE;
+}
+
+function renderActiveWalkBanner() {
+  const banner = $('#activeWalkBanner');
+  const walk = storage.activeWalk;
+  if (!walk) {
+    banner.hidden = true;
+    return;
+  }
+  const summaryReady = walk.endedAt !== null;
+  $('#activeWalkLabel').textContent = summaryReady ? 'WALK SUMMARY READY' : 'WALK IN PROGRESS';
+  $('#resumeActiveWalk').textContent = summaryReady ? 'REVIEW' : 'RESUME';
+  $('#finishActiveWalk').hidden = summaryReady;
+  banner.hidden = false;
+}
+
+function showWalkError(message) {
+  const error = $('#walkError') || $('#walkSaveError');
+  if (!error) {
+    setNotice(message, true);
+    return;
+  }
+  error.textContent = message;
+  error.hidden = false;
+}
+
+function persistActiveWalk(walk) {
+  if (!saveEnvelope(storage.workouts, false, walk)) {
+    showWalkError($('#appNotice').textContent || 'Walk state could not be saved.');
+    return false;
+  }
+  renderActiveWalkBanner();
+  return true;
+}
+
+function updateWalkMetrics() {
+  const walk = storage.activeWalk;
+  if (!walk || walk.endedAt !== null || $('#walkDialog').hidden) return;
+  const duration = walkDurationSeconds(walk);
+  const distance = walkGPSDistanceMiles(walk);
+  const elapsed = $('#walkElapsed');
+  if (elapsed) elapsed.textContent = formatWalkDuration(duration);
+  const miles = $('#walkDistance');
+  if (miles) miles.textContent = `${distance.toFixed(2)} mi`;
+  const pace = $('#walkPace');
+  if (pace) pace.textContent = formatWalkPace(duration, distance);
+  const status = $('#walkGPSStatus');
+  if (status) status.textContent = walkGPSStatusLabel(walk.gpsStatus);
+}
+
+function renderWalkTracker() {
+  const content = $('#walkContent');
+  const walk = storage.activeWalk;
+  if (!walk) {
+    const gpsSupported = window.isSecureContext && navigator.geolocation;
+    content.innerHTML = `<p class="walk-intro">Track an independent walk without changing a scheduled workout.</p>
+      <p class="walk-intro">Location permission is needed to calculate distance. You can enter distance manually if GPS is unavailable.</p>
+      <p class="walk-warning">Browser GPS may be interrupted if your iPhone is locked or this app is placed in the background.</p>
+      ${gpsSupported ? '' : '<p class="walk-gps-status" role="status">Location tracking requires a secure connection and a browser that supports location. You can still enter distance manually.</p>'}
+      <p id="walkError" class="walk-error" role="alert" hidden></p>
+      <button type="button" class="primary-action" data-walk-action="start">START WALK</button>`;
+    return;
+  }
+  if (walk.endedAt !== null) {
+    const duration = walkDurationSeconds(walk, Date.parse(walk.endedAt));
+    const gpsDistance = walk.gpsDistanceMiles;
+    const gpsText = gpsDistance === null ? 'Unavailable' : `${gpsDistance.toFixed(2)} mi`;
+    content.innerHTML = `<p class="walk-summary"><strong>Date:</strong> ${escapeHTML(new Date(`${walk.date}T00:00:00`).toLocaleDateString())}<br>
+        <strong>Start:</strong> ${escapeHTML(new Date(walk.startedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}<br>
+        <strong>End:</strong> ${escapeHTML(new Date(walk.endedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}<br>
+        <strong>Duration:</strong> ${formatWalkDuration(duration)}<br>
+        <strong>GPS-calculated distance:</strong> ${gpsText}</p>
+      <label for="walkFinalDistance">FINAL DISTANCE</label>
+      <input id="walkFinalDistance" data-walk-field="finalDistanceMiles" type="number" min="0.01" step="0.01" inputmode="decimal" value="${escapeHTML(walk.finalDistanceMiles)}" aria-describedby="walkDistanceHelp">
+      <p id="walkDistanceHelp" class="walk-summary-help">Enter distance in miles. You may replace the GPS result with the distance shown on your Apple Watch.</p>
+      <label for="walkDistanceSource">Distance source</label>
+      <select id="walkDistanceSource" data-walk-field="distanceSource">
+        <option value="iphone-gps"${walk.distanceSource === 'iphone-gps' ? ' selected' : ''}${gpsDistance === null || gpsDistance < MIN_USABLE_GPS_DISTANCE_MILES ? ' disabled' : ''}>iPhone GPS</option>
+        <option value="apple-watch-manual"${walk.distanceSource === 'apple-watch-manual' ? ' selected' : ''}>Apple Watch (manual entry)</option>
+        <option value="manual"${walk.distanceSource === 'manual' ? ' selected' : ''}>Manual</option>
+      </select>
+      <p class="walk-summary-help">Apple Watch distance is entered by you; this app does not connect to Apple Watch or HealthKit.</p>
+      <div class="walk-summary">
+        <span class="walk-metric-label">Average pace</span>
+        <strong id="walkSummaryPace" class="walk-metric-value">${formatWalkPace(duration, Number(walk.finalDistanceMiles))}</strong>
+        <span>Distance source: <span id="walkSummarySource">${escapeHTML(walkDistanceSourceLabel(walk.distanceSource))}</span></span>
+      </div>
+      <label for="walkNotes">Optional notes</label>
+      <textarea id="walkNotes" data-walk-field="notes">${escapeHTML(walk.notes)}</textarea>
+      <p id="walkSaveError" class="walk-error" role="alert" hidden></p>
+      <div class="walk-actions">
+        <button type="button" class="primary-action" data-walk-action="save">SAVE WALK</button>
+        <button type="button" class="danger-action" data-walk-action="discard">DISCARD WALK</button>
+      </div>`;
+    return;
+  }
+  const distance = walkGPSDistanceMiles(walk);
+  content.innerHTML = `<div class="walk-metrics">
+      <div class="walk-metric"><span class="walk-metric-label">Elapsed duration</span><strong id="walkElapsed" class="walk-metric-value">00:00:00</strong></div>
+      <div class="walk-metric"><span class="walk-metric-label">Distance</span><strong id="walkDistance" class="walk-metric-value">${distance.toFixed(2)} mi</strong></div>
+      <div class="walk-metric"><span class="walk-metric-label">Average pace</span><strong id="walkPace" class="walk-metric-value">${formatWalkPace(walkDurationSeconds(walk), distance)}</strong></div>
+    </div>
+    <p id="walkGPSStatus" class="walk-gps-status" role="status" aria-live="polite">${walkGPSStatusLabel(walk.gpsStatus)}</p>
+    <p id="walkError" class="walk-error" role="alert" hidden></p>
+    <p class="walk-gps-details">Only the distance total and most recent accepted position are retained while this walk is active. The route is not saved.</p>
+    <button type="button" class="danger-action" data-walk-action="stop">STOP WALK</button>`;
+  updateWalkMetrics();
+}
+
+function openWalkTracker() {
+  renderWalkTracker();
+  $('#walkDialog').hidden = false;
+  $('#closeWalkTracker').focus();
+  if (storage.activeWalk && storage.activeWalk.endedAt === null && walkTimer === null) {
+    resumeWalk();
+  }
+}
+
+function startWalkTimer() {
+  if (walkTimer !== null) clearInterval(walkTimer);
+  walkTimer = window.setInterval(updateWalkMetrics, 1000);
+  updateWalkMetrics();
+}
+
+function stopWalkTimerAndWatching() {
+  if (walkTimer !== null) {
+    clearInterval(walkTimer);
+    walkTimer = null;
+  }
+  stopWalkWatching();
+}
+
+function startWalk() {
+  if (storage.activeWalk) {
+    openWalkTracker();
+    return;
+  }
+  const begin = () => {
+    const now = new Date();
+    const walk = {
+      id: makeId(),
+      activityType: 'walk',
+      date: localDateKey(now),
+      startedAt: now.toISOString(),
+      endedAt: null,
+      accumulatedDistanceMeters: 0,
+      lastAcceptedPosition: null,
+      gpsStatus: 'requesting',
+      gpsDistanceMiles: null,
+      finalDistanceMiles: '',
+      distanceSource: '',
+      notes: ''
+    };
+    if (!persistActiveWalk(walk)) return;
+    renderWalkTracker();
+    startWalkTimer();
+    startWalkLocationTracking();
+  };
+  if (prepareVersion2Storage(begin)) begin();
+}
+
+function haversineDistanceMeters(first, second) {
+  const radians = degrees => degrees * Math.PI / 180;
+  const latitudeDelta = radians(second.latitude - first.latitude);
+  const longitudeDelta = radians(second.longitude - first.longitude);
+  const firstLatitude = radians(first.latitude);
+  const secondLatitude = radians(second.latitude);
+  const rawHalfChord = Math.sin(latitudeDelta / 2) ** 2
+    + Math.cos(firstLatitude) * Math.cos(secondLatitude) * Math.sin(longitudeDelta / 2) ** 2;
+  const halfChord = Math.min(1, Math.max(0, rawHalfChord));
+  return 6371000 * 2 * Math.atan2(Math.sqrt(halfChord), Math.sqrt(1 - halfChord));
+}
+
+function setWalkGPSStatus(status) {
+  const walk = storage.activeWalk;
+  if (!walk || walk.endedAt !== null || walk.gpsStatus === status) return;
+  persistActiveWalk({ ...walk, gpsStatus: status });
+  updateWalkMetrics();
+}
+
+function handleWalkPosition(position) {
+  const walk = storage.activeWalk;
+  if (!walk || walk.endedAt !== null) return;
+  const coords = position?.coords;
+  const nextPosition = coords && {
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+    accuracy: coords.accuracy,
+    timestamp: position.timestamp
+  };
+  if (!nextPosition || !validWalkPosition(nextPosition) || nextPosition.accuracy > MAX_GPS_ACCURACY_METERS) {
+    setWalkGPSStatus('weak');
+    return;
+  }
+  const previous = walk.lastAcceptedPosition;
+  const status = nextPosition.accuracy <= GOOD_GPS_ACCURACY_METERS
+    ? 'ready'
+    : nextPosition.accuracy <= WEAK_GPS_ACCURACY_METERS ? 'improving' : 'weak';
+  if (!previous) {
+    persistActiveWalk({ ...walk, lastAcceptedPosition: nextPosition, gpsStatus: status });
+    updateWalkMetrics();
+    return;
+  }
+  if (nextPosition.latitude === previous.latitude && nextPosition.longitude === previous.longitude) return;
+  const elapsedSeconds = (nextPosition.timestamp - previous.timestamp) / 1000;
+  const distanceMeters = haversineDistanceMeters(previous, nextPosition);
+  if (elapsedSeconds > MAX_GPS_FIX_GAP_SECONDS) {
+    persistActiveWalk({ ...walk, lastAcceptedPosition: nextPosition, gpsStatus: status });
+    updateWalkMetrics();
+    return;
+  }
+  const movementThreshold = Math.max(
+    MIN_GPS_MOVEMENT_METERS,
+    (previous.accuracy + nextPosition.accuracy) / 2
+  );
+  if (elapsedSeconds <= 0) {
+    setWalkGPSStatus('weak');
+    return;
+  }
+  if (distanceMeters > MAX_GPS_JUMP_METERS
+    || distanceMeters / elapsedSeconds > MAX_WALKING_SPEED_METERS_PER_SECOND) {
+    // Drop this segment but re-anchor so one bad fix cannot poison all later readings.
+    persistActiveWalk({ ...walk, lastAcceptedPosition: nextPosition, gpsStatus: 'weak' });
+    updateWalkMetrics();
+    return;
+  }
+  if (distanceMeters <= movementThreshold) {
+    setWalkGPSStatus(status);
+    return;
+  }
+  const updated = {
+    ...walk,
+    accumulatedDistanceMeters: walk.accumulatedDistanceMeters + distanceMeters,
+    lastAcceptedPosition: nextPosition,
+    gpsStatus: status
+  };
+  persistActiveWalk(updated);
+  updateWalkMetrics();
+}
+
+function handleWalkLocationError(error) {
+  const status = error?.code === 1
+    ? 'denied'
+    : error?.code === 3 ? 'timeout' : 'unavailable';
+  setWalkGPSStatus(status);
+  if (status === 'denied') stopWalkWatching();
+}
+
+function startWalkLocationTracking() {
+  if (!window.isSecureContext || !navigator.geolocation) {
+    setWalkGPSStatus('unsupported');
+    return;
+  }
+  setWalkGPSStatus('requesting');
+  try {
+    walkWatchId = navigator.geolocation.watchPosition(
+      handleWalkPosition,
+      handleWalkLocationError,
+      GPS_WATCH_OPTIONS
+    );
+  } catch (error) {
+    setWalkGPSStatus('unavailable');
+    const message = `Could not start location tracking: ${error.message || 'unknown error'}`;
+    setNotice(message, true);
+    showWalkError(message);
+  }
+}
+
+function resumeWalk() {
+  const walk = storage.activeWalk;
+  if (!walk) return;
+  if (walk.endedAt !== null) {
+    openWalkTracker();
+    return;
+  }
+  stopWalkTimerAndWatching();
+  const resumed = { ...walk, lastAcceptedPosition: null, gpsStatus: 'requesting' };
+  if (!persistActiveWalk(resumed)) return;
+  renderWalkTracker();
+  $('#walkDialog').hidden = false;
+  startWalkTimer();
+  startWalkLocationTracking();
+}
+
+function stopWalk(stopTime = new Date()) {
+  const walk = storage.activeWalk;
+  if (!walk || walk.endedAt !== null) return;
+  stopWalkTimerAndWatching();
+  const gpsDistanceMiles = walkGPSDistanceMiles(walk);
+  const hasGPSDistance = gpsDistanceMiles >= MIN_USABLE_GPS_DISTANCE_MILES;
+  const stopped = {
+    ...walk,
+    endedAt: stopTime.toISOString(),
+    lastAcceptedPosition: null,
+    gpsDistanceMiles: walk.accumulatedDistanceMeters > 0 ? gpsDistanceMiles : null,
+    finalDistanceMiles: hasGPSDistance ? gpsDistanceMiles.toFixed(2) : '',
+    distanceSource: hasGPSDistance ? 'iphone-gps' : 'manual',
+    notes: ''
+  };
+  if (!persistActiveWalk(stopped)) return;
+  renderWalkTracker();
+}
+
+function finishActiveWalk() {
+  const walk = storage.activeWalk;
+  if (!walk) return;
+  if (walk.endedAt === null) stopWalk();
+  openWalkTracker();
+}
+
+function confirmDiscardWalk() {
+  showConfirmation(
+    'Discard walk?',
+    'Discard this walk and its unsaved distance and duration? This cannot be undone.',
+    'Discard walk',
+    clearActiveWalk
+  );
+}
+
+function clearActiveWalk() {
+  stopWalkTimerAndWatching();
+  if (!saveEnvelope(storage.workouts, false, null)) {
+    showWalkError($('#appNotice').textContent || 'Walk state could not be cleared.');
+    return;
+  }
+  $('#walkDialog').hidden = true;
+  renderWalkTracker();
+  renderActiveWalkBanner();
+}
+
+function requestCloseWalkTracker() {
+  const walk = storage.activeWalk;
+  if (!walk) {
+    $('#walkDialog').hidden = true;
+    return;
+  }
+  if (walk.endedAt !== null) {
+    showConfirmation(
+      'Discard unsaved walk?',
+      'Closing now will discard this unsaved walk summary.',
+      'Discard walk',
+      clearActiveWalk
+    );
+    return;
+  }
+  showConfirmation(
+    'Close walk tracker?',
+    'The walk will keep running and timing while the tracker is closed. GPS may be interrupted in the background.',
+    'Close tracker',
+    () => {
+      $('#walkDialog').hidden = true;
+      renderActiveWalkBanner();
+    }
+  );
+}
+
+function updateWalkSummaryPreview() {
+  const walk = storage.activeWalk;
+  if (!walk || walk.endedAt === null) return;
+  const pace = $('#walkSummaryPace');
+  if (pace) {
+    pace.textContent = formatWalkPace(
+      walkDurationSeconds(walk, Date.parse(walk.endedAt)),
+      Number(walk.finalDistanceMiles)
+    );
+  }
+  const source = $('#walkSummarySource');
+  if (source) source.textContent = walkDistanceSourceLabel(walk.distanceSource);
+  const sourceSelect = $('#walkDistanceSource');
+  if (sourceSelect) sourceSelect.value = walk.distanceSource;
+  const error = $('#walkSaveError');
+  if (error) error.hidden = true;
+}
+
+function handleWalkFieldChange(event) {
+  const field = event.target.dataset.walkField;
+  const walk = storage.activeWalk;
+  if (!field || !walk || walk.endedAt === null) return;
+  const updated = { ...walk, [field]: event.target.value };
+  if (field === 'finalDistanceMiles'
+    && walk.distanceSource === 'iphone-gps'
+    && Number(event.target.value) !== Number(walk.gpsDistanceMiles?.toFixed(2))) {
+    updated.distanceSource = 'manual';
+  }
+  if (persistActiveWalk(updated)) updateWalkSummaryPreview();
+}
+
+function saveWalk() {
+  const walk = storage.activeWalk;
+  if (!walk || walk.endedAt === null) return;
+  const distanceMiles = Number(walk.finalDistanceMiles);
+  const durationSeconds = walkDurationSeconds(walk, Date.parse(walk.endedAt));
+  const pace = durationSeconds / distanceMiles;
+  if (!Number.isFinite(distanceMiles) || distanceMiles <= 0 || !Number.isFinite(pace) || pace < 0) {
+    const error = $('#walkSaveError');
+    error.textContent = 'Enter a final distance greater than zero miles before saving.';
+    error.hidden = false;
+    $('#walkFinalDistance').focus();
+    return;
+  }
+  const endedAt = walk.endedAt;
+  const step = {
+    id: 'walk-activity',
+    kind: 'walk',
+    status: 'completed',
+    activityType: 'walk',
+    date: walk.date,
+    startedAt: walk.startedAt,
+    endedAt,
+    durationSeconds,
+    gpsDistanceMiles: walk.gpsDistanceMiles,
+    distanceMiles,
+    averagePaceSecondsPerMile: pace,
+    distanceSource: walk.distanceSource,
+    notes: walk.notes,
+    createdAt: new Date().toISOString()
+  };
+  const workout = {
+    id: walk.id,
+    type: 'walk',
+    planId: 'anytime-walk',
+    day: 'Anytime',
+    title: 'Walk',
+    status: 'completed',
+    startedAt: walk.startedAt,
+    completedAt: endedAt,
+    currentStepIndex: 1,
+    steps: [step]
+  };
+  if (!saveEnvelope([...storage.workouts, workout], false, null)) {
+    showWalkError($('#appNotice').textContent || 'Walk could not be saved.');
+    return;
+  }
+  $('#walkDialog').hidden = true;
+  renderActiveWalkBanner();
+  renderHistory();
+  setNotice('Walk saved to history.');
+}
+
+function handleWalkAction(event) {
+  const button = event.target.closest('[data-walk-action]');
+  if (!button) return;
+  const action = button.dataset.walkAction;
+  if (action === 'start') startWalk();
+  if (action === 'stop') stopWalk();
+  if (action === 'save') saveWalk();
+  if (action === 'discard') confirmDiscardWalk();
 }
 
 function emptyRowingData() {
@@ -928,6 +1555,9 @@ function replaceActiveWorkout() {
 }
 
 function workoutTitle(workout) {
+  if (workout.type === 'walk') {
+    return `WALK · ${new Date(`${workout.steps[0].date}T00:00:00`).toLocaleDateString()}`;
+  }
   return `${workout.day} · ${workout.title}`;
 }
 
@@ -953,6 +1583,7 @@ function tab(name) {
   if (name === 'Workout') renderWorkout();
   if (name === 'History') renderHistory();
   renderActiveBanner();
+  renderActiveWalkBanner();
   scrollTo(0, 0);
 }
 
@@ -1802,6 +2433,7 @@ function formatSet(set, exercise) {
 }
 
 function historyStepSummary(step, programVersion) {
+  if (step.kind === 'walk') return 'WALK';
   if (step.kind === 'warmup' || step.kind === 'cooldown') {
     if (step.rowingData) {
       const time = formatElapsedTime(step.rowingData.elapsedSeconds);
@@ -1851,7 +2483,24 @@ function appendHistoryStep(container, step, programVersion) {
   const heading = document.createElement('strong');
   heading.textContent = historyStepSummary(step, programVersion);
   block.append(heading);
-  if (step.kind === 'exercise') {
+  if (step.kind === 'walk') {
+    const date = new Date(`${step.date}T00:00:00`).toLocaleDateString();
+    const start = new Date(step.startedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const end = new Date(step.endedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const details = document.createElement('p');
+    details.textContent = `Date: ${date} · ${start}–${end} · Duration: ${formatWalkDuration(step.durationSeconds)} · Distance: ${step.distanceMiles.toFixed(2)} mi · Average pace: ${formatWalkPace(step.durationSeconds, step.distanceMiles)} · Source: ${walkDistanceSourceLabel(step.distanceSource)}`;
+    block.append(details);
+    if (step.gpsDistanceMiles !== null) {
+      const gps = document.createElement('p');
+      gps.textContent = `GPS-calculated distance: ${step.gpsDistanceMiles.toFixed(2)} mi`;
+      block.append(gps);
+    }
+    if (step.notes) {
+      const notes = document.createElement('p');
+      notes.textContent = `Notes: ${step.notes}`;
+      block.append(notes);
+    }
+  } else if (step.kind === 'exercise') {
     if (step.status === 'completed') {
       const exercise = EXERCISES[step.exerciseId];
       step.sets.forEach(set => {
@@ -1899,6 +2548,10 @@ function appendHistoryStep(container, step, programVersion) {
 }
 
 function workoutSummary(workout) {
+  if (workout.type === 'walk') {
+    const walk = workout.steps[0];
+    return `${formatWalkDuration(walk.durationSeconds)} · ${walk.distanceMiles.toFixed(2)} mi · ${formatWalkPace(walk.durationSeconds, walk.distanceMiles)} · ${walkDistanceSourceLabel(walk.distanceSource)}`;
+  }
   if (workout.type === 'strength') {
     const exercises = workout.steps.filter(step => step.kind === 'exercise').length;
     const warmup = workout.steps.find(step => step.kind === 'warmup');
@@ -1943,7 +2596,7 @@ function renderHistoryCard(workout) {
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.className = 'small-button';
-    remove.textContent = 'Delete workout';
+    remove.textContent = workout.type === 'walk' ? 'Delete walk' : 'Delete workout';
     remove.addEventListener('click', () => deleteWorkout(workout.id, false));
     card.append(remove);
   }
@@ -2151,6 +2804,15 @@ function init() {
   toggleOptionalActivityFields();
   rowPlan();
   renderActiveBanner();
+  renderActiveWalkBanner();
+  $('#openWalkTracker').addEventListener('click', openWalkTracker);
+  $('#resumeActiveWalk').addEventListener('click', resumeWalk);
+  $('#finishActiveWalk').addEventListener('click', finishActiveWalk);
+  $('#discardActiveWalk').addEventListener('click', confirmDiscardWalk);
+  $('#closeWalkTracker').addEventListener('click', requestCloseWalkTracker);
+  $('#walkDialog').addEventListener('click', handleWalkAction);
+  $('#walkDialog').addEventListener('input', handleWalkFieldChange);
+  $('#walkDialog').addEventListener('change', handleWalkFieldChange);
   $('#rw').addEventListener('change', rowPlan);
   $('#sa').addEventListener('change', toggleOptionalActivityFields);
   $('#optionalRowFields').addEventListener('input', event => {
@@ -2198,12 +2860,21 @@ function init() {
     if (event.target === $('#exerciseFormDialog')) closeExerciseForm();
   });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && !$('#workoutChoice').hidden) {
+    if (event.key !== 'Escape') return;
+    if (!$('#confirmDialog').hidden) {
+      resolveConfirmation(false);
+      return;
+    }
+    if (!$('#workoutChoice').hidden) {
       $('#workoutChoice').hidden = true;
       pendingPlanId = null;
+      return;
     }
-    if (event.key === 'Escape' && !$('#confirmDialog').hidden) resolveConfirmation(false);
-    if (event.key === 'Escape' && !$('#exerciseFormDialog').hidden) closeExerciseForm();
+    if (!$('#exerciseFormDialog').hidden) {
+      closeExerciseForm();
+      return;
+    }
+    if (!$('#walkDialog').hidden) requestCloseWalkTracker();
   });
   tab('Monday');
 }

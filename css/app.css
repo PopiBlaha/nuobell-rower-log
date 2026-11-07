@@ -48,6 +48,32 @@ textarea{font-size:17px}
 .legacy-notice p{margin:0 0 10px}
 .active-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#eaf1f8}
 .active-banner button{flex-shrink:0}
+.walk-launch{position:sticky;top:8px;z-index:4;padding:10px;margin-bottom:12px}
+.walk-launch-action{width:100%;min-height:58px;background:#177443;font-size:18px}
+.walk-banner{align-items:flex-start}
+.walk-recovery-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;flex-shrink:0}
+.walk-recovery-actions button{width:auto;min-width:0;margin:0;padding:10px 8px;font-size:13px}
+.modal.walk-modal{z-index:9;overflow-y:auto;overscroll-behavior:contain}
+.walk-card{max-height:calc(100vh - 36px);max-height:calc(100dvh - 36px);overflow-y:auto}
+.walk-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.walk-heading h2{margin:0 0 14px}
+.walk-close{flex-shrink:0;min-height:44px;padding:8px 10px;background:#e7edf4;color:#17365d;font-size:12px}
+.walk-intro,.walk-warning,.walk-gps-status{border-radius:10px;padding:11px;margin:10px 0}
+.walk-intro{background:#eaf1f8}
+.walk-warning{background:#fff3cd;color:#594414}
+.walk-gps-status{background:#eaf1f8;color:#17365d;font-weight:750}
+.walk-metrics{display:grid;gap:10px;margin:14px 0}
+.walk-metric{background:#f4f7fa;border-radius:12px;padding:14px;text-align:center}
+.walk-metric-label{display:block;color:#52606c;font-size:13px;font-weight:750}
+.walk-metric-value{display:block;color:#17365d;font-size:clamp(28px,9vw,42px);font-variant-numeric:tabular-nums;font-weight:800;line-height:1.2}
+.walk-summary{background:#f4f7fa;border-radius:12px;padding:12px;margin:12px 0}
+.walk-summary p{margin:5px 0}
+.walk-summary .walk-metric-value{font-size:30px}
+.walk-actions{display:grid;gap:8px;margin-top:12px}
+.walk-actions button{width:100%;margin:0;min-height:56px}
+.walk-summary-help{color:#52606c;font-size:14px;margin:6px 0 12px}
+.walk-error{color:#842020;background:#fde8e8;border-radius:10px;padding:11px}
+.walk-gps-details{font-size:14px;color:#52606c}
 .row-plan{margin:10px 0}
 .workout-heading{margin:0 0 10px}
 .progress-label{font-weight:800;color:#17365d;margin:0 0 8px}
@@ -106,6 +132,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
   .set-fields{gap:5px}
   .set-fields input,.set-fields select{font-size:16px;padding:7px}
   .active-banner{align-items:stretch;flex-direction:column}
+  .walk-recovery-actions{width:100%}
+  .walk-recovery-actions button{font-size:12px;padding:9px 5px}
+  .walk-card{padding:14px}
 }
 @media(min-width:700px){#refs{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
 .field-spaced{margin-top:9px}
